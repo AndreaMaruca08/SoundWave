@@ -1,0 +1,351 @@
+package nv.core.components;
+
+import nv.core.AppendableGeometry;
+import nv.core.NvContext;
+import nv.core.UpdateCycle;
+import nv.core.annotations.EngineCore;
+import nv.core.collision.Collidable;
+import nv.core.collision.CollisionManager;
+import nv.core.collision.CollisionSystem;
+import nv.core.errors.ex.NvLogicEx;
+import nv.core.graphic.NvGraphic;
+import nv.core.io.ClickSystem;
+import nv.core.io.Clickable;
+import nv.core.io.HoverSystem;
+import nv.core.io.Hoverable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static nv.core.graphic.NvGraphic.camera;
+
+/**
+ * <h3>Root of the component tree</h3>
+ * <p>Base class for all components in the component tree, by updating or drawing a component you draw every child with it</p>
+ *
+ * @since 1.0
+ * @author Andrea Maruca
+ */
+@EngineCore
+@SuppressWarnings("unused")
+public abstract class NvComp implements UpdateCycle {
+    private NvComp parent;
+    private final List<NvComp> children;
+    private int x, y, w, h;
+    protected boolean isHovered;
+    protected boolean childrenFirst;
+    public float rotation = 0;
+    public float pivotX = 0.5f;
+    public float pivotY = 0.5f;
+    protected int weight = CollisionSystem.NO_WEIGHT;
+    public boolean border = false;
+    protected boolean isHUD = false;
+    protected boolean phaseThrough = false;
+    protected int zIndex = 0;
+    private boolean shouldGetDestroyed = false;
+    private boolean dirty = false;
+
+    public NvComp(int x, int y, int w, int h) {
+        children = new ArrayList<>();
+        this.parent = null;
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+    }
+
+    public boolean isPhaseThrough() {
+        return phaseThrough;
+    }
+
+    public void setPhaseThrough(boolean phaseThrough) {
+        this.phaseThrough = phaseThrough;
+        markDirty();
+    }
+
+    public int getZIndex() {
+        return zIndex;
+    }
+
+    public void setZIndex(int zIndex) {
+        this.zIndex = zIndex;
+        markDirty();
+    }
+
+    public boolean isHUD() {
+        return isHUD;
+    }
+
+    public void setHUD(boolean HUD) {
+        if(this instanceof Collidable)
+            throw new NvLogicEx("Collidable readycomponents cannot be set as HUD");
+        if (isHUD != HUD) {
+            isHUD = HUD;
+            markDirty();
+        }
+    }
+
+    public boolean isChildrenFirst() {
+        return childrenFirst;
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public List<NvComp> getChildren() {
+        return children;
+    }
+
+    public NvComp getParent(){
+        return parent;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
+        markDirty();
+    }
+
+    public int getH() {
+        return h;
+    }
+
+    public int getW() {
+        return w;
+    }
+
+    protected void setParent(NvComp parent){
+        this.parent = parent;
+    }
+
+    public void setChildrenFirst(boolean childrenFirst) {
+        this.childrenFirst = childrenFirst;
+        markDirty();
+    }
+
+    public void setX(int x) {
+        if (this.x != x) {
+            this.x = x;
+            markDirty();
+        }
+    }
+
+    public void setY(int y) {
+        if (this.y != y) {
+            this.y = y;
+            markDirty();
+        }
+    }
+
+    public void setH(int h) {
+        if (this.h != h) {
+            this.h = h;
+            markDirty();
+        }
+    }
+
+    public void setW(int w) {
+        if (this.w != w) {
+            this.w = w;
+            markDirty();
+        }
+    }
+
+    public void markDirty() {
+        if (!this.dirty) {
+            this.dirty = true;
+            if (parent != null) {
+                parent.childIsDirty(this);
+            } else {
+                NvContext.markSceneDirty();
+            }
+        }
+    }
+
+    protected void childIsDirty(NvComp child) {
+        markDirty();
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    public void cleanDirty() {
+        this.dirty = false;
+    }
+
+    private NvContext context;
+    public void addChild(NvComp child){
+        if(context == null)
+            context = NvContext.getInstance();
+        children.add(child);
+        child.setParent(this);
+        if(child instanceof Collidable)
+            CollisionManager.addCanCollide(child);
+        if(child instanceof Clickable)
+            ClickSystem.addClickable(child);
+        if(child instanceof Hoverable)
+            HoverSystem.addHoverable(child);
+        markDirty();
+    }
+
+    public void removeChild(NvComp child){
+        if(context == null)
+            context = NvContext.getInstance();
+        children.remove(child);
+        if(child instanceof Collidable)
+            CollisionManager.removeCanCollide(child);
+        if(child instanceof Clickable)
+            ClickSystem.removeClickable(child);
+        if(child instanceof Hoverable)
+            HoverSystem.removeHoverable(child);
+        markDirty();
+    }
+
+    protected void mouseEnter(){}
+
+    protected void mouseOut(){}
+
+    public void translate(Vector2D v, float amount){
+        this.x += (int) (v.x * amount);
+        this.y += (int) (v.y * amount);
+        markDirty();
+    }
+
+    public void handleHover(int mouseX, int mouseY){
+        boolean hoveredNow = isInside(mouseX, mouseY);
+        if(!hoveredNow) {
+            if (isHovered) {
+                isHovered = false;
+                markDirty();
+            }
+            return;
+        }
+        for(NvComp child : children)
+            child.handleHover(mouseX, mouseY);
+        if (!isHovered) {
+            isHovered = true;
+            markDirty();
+        }
+    }
+
+
+    public void tick(float dt){
+        updateChildren(dt);
+        update(dt);
+    }
+
+    private void updateChildren(float dt){
+        int n = children.size();
+        for (int i = 0; i < n; i++) {
+            children.get(i).tick(dt);
+        }
+
+        children.removeIf(child -> {
+            if (child.shouldGetDestroyed) {
+                child.actualDestroy();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public void draw(NvGraphic g){
+        int vStart = g.getVertexFloatCount();
+        int iStart = g.getImageVertexFloatCount();
+
+        g.setComponent(this);
+        if(isHovered){
+            mouseEnter();
+        }else{
+            mouseOut();
+        }
+        if(!childrenFirst){
+            drawIntern(g);
+            drawChildren(g);
+        }else{
+            drawChildren(g);
+            g.setComponent(this);
+            drawIntern(g);
+        }
+        if(border){
+            g.setComponent(this);
+            if(this instanceof AppendableGeometry comp){
+                g.drawRect(0,0, w, h, 1,0,0, comp);
+            }
+            g.drawRect(0,0, w, h, 1,0,0);
+        }
+        g.setComponent(this);
+        g.applyTransformsToBatch(vStart, iStart);
+
+        cleanDirty();
+    }
+
+    public void drawChildren(NvGraphic g){
+        for (NvComp child : children) {
+            child.draw(g);
+        }
+    }
+
+    public boolean isInside(int x, int y){
+        float shiftedX = camera.x + x;
+        float shiftedY = camera.y + y;
+        return  shiftedX >= this.x &&
+                shiftedX <= this.x + this.w &&
+                shiftedY >= this.y &&
+                shiftedY <= this.y + this.h;
+    }
+
+    public abstract void drawIntern(NvGraphic g);
+
+    public void rotate(float angle, boolean clockwise) {
+        rotation += clockwise ? angle : -angle;
+        markDirty();
+    }
+
+    public void destroy(){
+        this.shouldGetDestroyed = true;
+        markDirty();
+    }
+    private void actualDestroy(){
+        if(context == null)
+            context = NvContext.getInstance();
+
+        List<NvComp> childrenCopy = new ArrayList<>(children);
+        for (NvComp child : childrenCopy) {
+            child.actualDestroy();
+        }
+        children.clear();
+
+        if(this instanceof Collidable){
+            CollisionManager.removeCanCollide(this);
+        }
+        if(this instanceof Clickable) {
+            ClickSystem.removeClickable(this);
+        }
+        if(this instanceof Hoverable)
+            HoverSystem.removeHoverable(this);
+
+        whenDestroyed();
+        markDirty();
+    }
+
+    /**
+     * Override for custom behavior when destroyed
+     */
+    protected void whenDestroyed(){}
+
+    @Override
+    public String toString(){
+        return "NvComp: " + this.getClass().getSimpleName() + " x: " + x + " y: " + y + " w: " + w + " h: " + h + " rotation: " + rotation;
+    }
+
+}
