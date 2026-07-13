@@ -143,6 +143,65 @@ public class NvPixelGraphic extends NvGraphic {
     }
 
     @Override
+    public void drawLine(
+            float x1,
+            float y1,
+            float x2,
+            float y2,
+            float thickness,
+            float r,
+            float g,
+            float b,
+            AppendableGeometry comp
+    ) {
+        x1 = tx(component.getX() + x1);
+        y1 = ty(component.getY() + y1);
+        x2 = tx(component.getX() + x2);
+        y2 = ty(component.getY() + y2);
+
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+
+        float length = (float)Math.sqrt(dx * dx + dy * dy);
+
+        if(length == 0)
+            return;
+
+        float nx = -dy / length;
+        float ny = dx / length;
+
+
+        float half = thickness * 0.5f;
+
+        nx *= half;
+        ny *= half;
+
+        float[] lineVerts = {
+                x1 + nx, y1 + ny,
+                r, g, b, wu, wv, a,
+
+                x2 + nx, y2 + ny,
+                r, g, b, wu, wv, a,
+
+                x2 - nx, y2 - ny,
+                r, g, b, wu, wv, a,
+
+
+                x1 - nx, y1 - ny,
+                r, g, b, wu, wv, a
+        };
+
+
+        int[] lineIndices = {
+                0,1,2,
+                2,3,0
+        };
+
+
+        comp.append(lineVerts, lineIndices);
+    }
+
+    @Override
     public void drawRect(float x, float y, float w, float h,
                          float r, float g, float b,
                          AppendableGeometry comp) {
