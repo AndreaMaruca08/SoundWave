@@ -7,7 +7,8 @@ import org.lwjgl.glfw.GLFW;
 public class MovingCamera extends NvCharacter {
     public MovingCamera(int x, int y) {
         super(x, y, 10,10, 1500);
-        velocity = 300;
+        camera.setXYOnCenter(x, y);
+        velocity = 400;
     }
 
     @Override

@@ -14,13 +14,16 @@ public class WavePlayer extends NvComp {
 
     private int DISPLAY_SAMPLES = 2048;
     private final Microphone mic;
+
     private final HudLabel title;
+    private final HudLabel durationLabel;
+
     private final String[] filePaths;
     private int current = 0;
 
     private boolean error = false;
 
-    private final int maxDurationMs;
+    private int maxDurationMs;
     private int currentVolume = 100;
 
     private float lineX1;
@@ -40,6 +43,8 @@ public class WavePlayer extends NvComp {
         this.filePaths = new String[]{};
         this.maxDurationMs = 0;
         this.title = new HudLabel(30, 30);
+        this.durationLabel = new HudLabel(100,0);
+        durationLabel.changeText("");
         title.setHUD(true);
         title.setRgb(1,1,1);
         title.changeText("Microphone");
@@ -58,6 +63,8 @@ public class WavePlayer extends NvComp {
             this.filePaths = new String[]{};
             this.maxDurationMs = 0;
             this.title = new HudLabel(30, 30);
+            this.durationLabel = new HudLabel(100,0);
+            durationLabel.changeText("");
             mic = null;
             return;
         }
@@ -73,12 +80,27 @@ public class WavePlayer extends NvComp {
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[0]);
         this.DISPLAY_SAMPLES = samples.length;
         this.title = new HudLabel(30, 30);
+        this.durationLabel = new HudLabel((int) (w/1.95f), 30);
+        durationLabel.changeText(getFormattedDuration());
+        durationLabel.setRgb(1,1,1);
         title.setRgb(1,1,1);
         var p = filePaths[0];
         title.changeText(p.substring(p.lastIndexOf("/")+1, p.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
         addChild(title);
+        addChild(durationLabel);
         this.mic = null;
         initBtn();
+    }
+
+    private String getFormattedDuration(){
+        int secs = maxDurationMs / 1000;
+        int currSecs = (int) (currentTime / 1000);
+
+        int currMin = currSecs / 60;
+        int min = secs / 60;
+
+        return currMin + ":" + String.format("%02d", currSecs % 60) + "/"
+                + min + ":" + String.format("%02d", secs % 60);
     }
 
     public void next(){
@@ -89,6 +111,7 @@ public class WavePlayer extends NvComp {
         }
         reset();
     }
+
     public void previous(){
         AudioManager.stopExternal(filePaths[current]);
         current--;
@@ -105,20 +128,23 @@ public class WavePlayer extends NvComp {
         title.changeText(p.substring(p.lastIndexOf("/")+1, p.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
         AudioManager.loadExternal(filePaths[current]);
         AudioManager.setVolumeExternal(filePaths[current], currentVolume);
+        this.maxDurationMs = AudioManager.getDurationExternal(filePaths[current]);
         waveBuffer = newSamples;
     }
 
     private int cX = 0;
 
     private int nextPosition(){
-        return cX += 150;
+        return cX += 100;
     }
 
     private float currentTime = 0;
 
     private void initBtn(){
+        var size = 80;
+
         AtomicBoolean paused = new AtomicBoolean(true);
-        var pause = new PlayButton(nextPosition(), (int) (getH()*0.9f),100,100, Color.DARK_GRAY," ||");
+        var pause = new PlayButton(nextPosition(), (int) (getH()*0.9f),size,size, Color.DARK_GRAY," ||");
         pause.setAction(() -> {
             paused.set(!paused.get());
 
@@ -132,13 +158,14 @@ public class WavePlayer extends NvComp {
                 pause.markDirty();
             }
         });
+
         var y = (int) (getH()*0.9f);
-        var skipBack = new PlayButton(0, y,100,100, Color.DARK_GRAY,"<<5");
+        var skipBack = new PlayButton(0, y,size,size, Color.DARK_GRAY,"<<5");
         skipBack.setAction(() -> {
             currentTime -= 5000;
             AudioManager.skipExternal(filePaths[current], (int) currentTime);
         });
-        var skipForward = new PlayButton(nextPosition(), y,100,100, Color.DARK_GRAY,"5>>");
+        var skipForward = new PlayButton(nextPosition(), y,size,size, Color.DARK_GRAY,"5>>");
         skipForward.setAction(() -> {
             currentTime += 5000;
             AudioManager.skipExternal(filePaths[current], (int) currentTime);
@@ -151,7 +178,7 @@ public class WavePlayer extends NvComp {
 
         nextPosition();
 
-        var minusVolume = new PlayButton(nextPosition(), y,100,100, Color.DARK_GRAY," -");
+        var minusVolume = new PlayButton(nextPosition(), y,size,size, Color.DARK_GRAY," -");
         minusVolume.setAction(() -> {
             currentVolume -= 5;
             if(currentVolume < 0)
@@ -160,7 +187,7 @@ public class WavePlayer extends NvComp {
             volume.changeText("Volume: " + currentVolume);
             markDirty();
         });
-        var plusVolume = new PlayButton(nextPosition(), y,100,100, Color.DARK_GRAY," +");
+        var plusVolume = new PlayButton(nextPosition(), y,size,size, Color.DARK_GRAY," +");
         plusVolume.setAction(() -> {
             currentVolume += 5;
             if(currentVolume > 100)
@@ -170,10 +197,10 @@ public class WavePlayer extends NvComp {
             markDirty();
         });
         nextPosition();
-        var nextSound = new PlayButton(nextPosition(), y,100,100, Color.CYAN.darker(), " Next");
+        var nextSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), " Next");
         nextSound.setAction(this::next);
-
-        var previousSound = new PlayButton(nextPosition(), y,100,100, Color.CYAN.darker(), "Previous");
+        nextPosition();
+        var previousSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), "Previous");
         previousSound.setAction(this::previous);
 
         addChild(nextSound);
@@ -187,6 +214,14 @@ public class WavePlayer extends NvComp {
     }
 
     private float limiter = 0;
+
+    private void updateLine(){
+        var percentage = AudioManager.getCurrentPercentageExternal(filePaths[current]);
+        lineX1 = getW() * (percentage/100);
+        currentTime = percentage * maxDurationMs / 100;
+        durationLabel.changeText(getFormattedDuration());
+        NvContext.markSceneDirty();
+    }
 
     @Override
     public void update(float dt) {
@@ -208,12 +243,6 @@ public class WavePlayer extends NvComp {
         currentTime += dt;
     }
 
-    private void updateLine(){
-        var percentage = AudioManager.getCurrentPercentageExternal(filePaths[current]);
-        lineX1 = getW() * (percentage/100);
-        currentTime = percentage * maxDurationMs / 100;
-        NvContext.markSceneDirty();
-    }
 
     @Override
     public void drawIntern(NvGraphic g) {
