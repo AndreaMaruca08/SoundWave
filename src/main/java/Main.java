@@ -2,7 +2,10 @@ import nv.core.ContextBuilder;
 import nv.core.components.NvCont;
 import nv.core.graphic.NvGraphic;
 import sound.MovingCamera;
-import sound.WaveDisplay;
+import sound.WavePlayer;
+
+import static nv.core.errors.NvLogger.logErr;
+import static sound.loading.DecodeManager.getExecutableDirectory;
 
 void main() {
     var context = new ContextBuilder("Sound wave")
@@ -14,7 +17,24 @@ void main() {
 
     int margin = 150;
 
-    String music = "4rdsanctuary.wav";
+    Path folder = Paths.get("audio_files").toAbsolutePath();
+
+    try {
+        Files.createDirectories(folder);
+    } catch (IOException e) {
+        logErr("Impossibile creare la cartella: " + folder);
+        return;
+    }
+    List<String> paths = new ArrayList<>(10);
+    try (Stream<Path> stream = Files.walk(folder)) {
+        paths = stream
+                .filter(Files::isRegularFile)
+                .map(p -> p.toAbsolutePath().toString())
+                .toList();
+
+    } catch (IOException e) {
+        logErr("Error while reading the directory: " + folder.toAbsolutePath());
+    }
 
     var w = (int) context.getRenderWidth() - margin*2;
     var h = (int) context.getRenderHeight();
@@ -25,10 +45,10 @@ void main() {
     context.setKeyboardFocus(camera);
     camera.setNeedCamera(true);
 
-    WaveDisplay display = new WaveDisplay(
+    WavePlayer display = new WavePlayer(
             margin, 0,
             w, h,
-            music
+            paths.toArray(new String[0])
     );
 
     page.addChild(display);

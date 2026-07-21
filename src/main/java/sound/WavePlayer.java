@@ -10,12 +10,16 @@ import sound.loading.DecodeManager;
 import java.awt.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class WaveDisplay extends NvComp {
+public class WavePlayer extends NvComp {
 
     private int DISPLAY_SAMPLES = 2048;
     private final Microphone mic;
     private final HudLabel title;
-    private final String filePath;
+    private final String[] filePaths;
+    private int current = 0;
+
+    private boolean error = false;
+
     private final int maxDurationMs;
     private int currentVolume = 100;
 
@@ -24,7 +28,7 @@ public class WaveDisplay extends NvComp {
 
     private short[] waveBuffer = new short[DISPLAY_SAMPLES];
 
-    public WaveDisplay(
+    public WavePlayer(
             int x,
             int y,
             int w,
@@ -33,7 +37,7 @@ public class WaveDisplay extends NvComp {
     ) {
         super(x, y, w, h);
         this.mic = microphone;
-        this.filePath = "Microphone";
+        this.filePaths = new String[]{};
         this.maxDurationMs = 0;
         this.title = new HudLabel(30, 30);
         title.setHUD(true);
@@ -41,29 +45,67 @@ public class WaveDisplay extends NvComp {
         title.changeText("Microphone");
         addChild(title);
     }
-    public WaveDisplay(
+    public WavePlayer(
             int x,
             int y,
             int w,
             int h,
-            String filePath
+            String[] filePaths
     ) {
         super(x, y, w, h);
-        var samples = DecodeManager.decode(filePath);
+        if(filePaths.length == 0){
+            error = true;
+            this.filePaths = new String[]{};
+            this.maxDurationMs = 0;
+            this.title = new HudLabel(30, 30);
+            mic = null;
+            return;
+        }
 
-        AudioManager.loadExternal(filePath);
-        AudioManager.setVolumeExternal(filePath, currentVolume);
+
+        var samples = DecodeManager.decode(filePaths[0]);
+
+        AudioManager.loadExternal(filePaths[0]);
+        AudioManager.setVolumeExternal(filePaths[0], currentVolume);
 
         this.waveBuffer = samples;
-        this.filePath = filePath;
-        this.maxDurationMs = AudioManager.getDurationExternal(filePath);
+        this.filePaths = filePaths;
+        this.maxDurationMs = AudioManager.getDurationExternal(filePaths[0]);
         this.DISPLAY_SAMPLES = samples.length;
         this.title = new HudLabel(30, 30);
         title.setRgb(1,1,1);
-        title.changeText(filePath.substring(0, filePath.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
+        var p = filePaths[0];
+        title.changeText(p.substring(p.lastIndexOf("/")+1, p.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
         addChild(title);
         this.mic = null;
         initBtn();
+    }
+
+    public void next(){
+        AudioManager.stopExternal(filePaths[current]);
+        current++;
+        if(current > filePaths.length - 1){
+            current = 0;
+        }
+        reset();
+    }
+    public void previous(){
+        AudioManager.stopExternal(filePaths[current]);
+        current--;
+        if(current < 0){
+            current = filePaths.length - 1;
+        }
+        reset();
+    }
+
+    private void reset(){
+        var p = filePaths[current];
+        var newSamples = DecodeManager.decode(p);
+        DISPLAY_SAMPLES = newSamples.length;
+        title.changeText(p.substring(p.lastIndexOf("/")+1, p.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
+        AudioManager.loadExternal(filePaths[current]);
+        AudioManager.setVolumeExternal(filePaths[current], currentVolume);
+        waveBuffer = newSamples;
     }
 
     private int cX = 0;
@@ -81,11 +123,11 @@ public class WaveDisplay extends NvComp {
             paused.set(!paused.get());
 
             if(paused.get()){
-                AudioManager.stopExternal(filePath);
+                AudioManager.stopExternal(filePaths[current]);
                 pause.setDisplay("||");
                 pause.markDirty();
             }else{
-                AudioManager.playExternal(filePath);
+                AudioManager.playExternal(filePaths[current]);
                 pause.setDisplay("GO");
                 pause.markDirty();
             }
@@ -94,12 +136,12 @@ public class WaveDisplay extends NvComp {
         var skipBack = new PlayButton(0, y,100,100, Color.DARK_GRAY,"<<5");
         skipBack.setAction(() -> {
             currentTime -= 5000;
-            AudioManager.skipExternal(filePath, (int) currentTime);
+            AudioManager.skipExternal(filePaths[current], (int) currentTime);
         });
         var skipForward = new PlayButton(nextPosition(), y,100,100, Color.DARK_GRAY,"5>>");
         skipForward.setAction(() -> {
             currentTime += 5000;
-            AudioManager.skipExternal(filePath, (int) currentTime);
+            AudioManager.skipExternal(filePaths[current], (int) currentTime);
         });
         nextPosition();
 
@@ -114,7 +156,7 @@ public class WaveDisplay extends NvComp {
             currentVolume -= 5;
             if(currentVolume < 0)
                 currentVolume = 0;
-            AudioManager.setVolumeExternal(filePath, currentVolume);
+            AudioManager.setVolumeExternal(filePaths[current], currentVolume);
             volume.changeText("Volume: " + currentVolume);
             markDirty();
         });
@@ -123,11 +165,19 @@ public class WaveDisplay extends NvComp {
             currentVolume += 5;
             if(currentVolume > 100)
                 currentVolume = 100;
-            AudioManager.setVolumeExternal(filePath, currentVolume);
+            AudioManager.setVolumeExternal(filePaths[current], currentVolume);
             volume.changeText("Volume: " + currentVolume);
             markDirty();
         });
+        nextPosition();
+        var nextSound = new PlayButton(nextPosition(), y,100,100, Color.CYAN.darker(), " Next");
+        nextSound.setAction(this::next);
 
+        var previousSound = new PlayButton(nextPosition(), y,100,100, Color.CYAN.darker(), "Previous");
+        previousSound.setAction(this::previous);
+
+        addChild(nextSound);
+        addChild(previousSound);
         addChild(pause);
         addChild(skipBack);
         addChild(skipForward);
@@ -140,6 +190,8 @@ public class WaveDisplay extends NvComp {
 
     @Override
     public void update(float dt) {
+        if(error)
+            return;
 
         if(mic != null){
             mic.copyLatest(waveBuffer);
@@ -157,7 +209,7 @@ public class WaveDisplay extends NvComp {
     }
 
     private void updateLine(){
-        var percentage = AudioManager.getCurrentPercentageExternal(filePath);
+        var percentage = AudioManager.getCurrentPercentageExternal(filePaths[current]);
         lineX1 = getW() * (percentage/100);
         currentTime = percentage * maxDurationMs / 100;
         NvContext.markSceneDirty();
@@ -165,6 +217,13 @@ public class WaveDisplay extends NvComp {
 
     @Override
     public void drawIntern(NvGraphic g) {
+        if(error){
+            g.drawRect(0,0,1000,1000,0,0,0);
+            g.setRGB(1,1,1);
+            g.drawText("Error: empty directory /audio_files", 150,500);
+            return;
+        }
+
         WaveRenderer.drawWaveform(g, waveBuffer, getW(), getH()*0.8f);
         g.drawLine(lineX1, 0f, lineX1, lineY2, 3);
     }
