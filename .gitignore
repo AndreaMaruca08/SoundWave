@@ -19,6 +19,10 @@ out/
 !**/src/test/**/out/
 !.idea/runConfigurations/
 
+### Audio ###
+audio_files
+
+
 ### Eclipse ###
 .apt_generated
 .classpath
