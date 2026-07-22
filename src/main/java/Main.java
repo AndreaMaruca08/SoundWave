@@ -1,5 +1,4 @@
 import nv.core.ContextBuilder;
-import nv.core.ScreenSize;
 import nv.core.components.NvCont;
 import nv.core.graphic.NvGraphic;
 import sound.MovingCamera;
@@ -30,7 +29,6 @@ void main() {
 
     NvGraphic.setCurrentCamera(camera.getCamera());
     context.setKeyboardFocus(camera);
-
 
     WavePlayer display = new WavePlayer(
             margin, 0,

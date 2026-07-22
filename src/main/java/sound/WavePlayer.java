@@ -5,9 +5,13 @@ import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
 import nv.utils.shapes.dynamic.NvLabel;
+import sound.audioRendering.AudioRenderer;
+import sound.audioRendering.LineUser;
+import sound.audioRendering.WaveRenderer;
 import sound.loading.DecodeManager;
 
 import java.awt.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WavePlayer extends NvComp {
@@ -19,6 +23,9 @@ public class WavePlayer extends NvComp {
     private final HudLabel durationLabel;
 
     private final String[] filePaths;
+    private AudioRenderer[] renderers;
+    private int currentRenderer = 0;
+
     private int current = 0;
 
     private boolean error = false;
@@ -143,6 +150,10 @@ public class WavePlayer extends NvComp {
     private void initBtn(){
         var size = 80;
 
+        renderers = new AudioRenderer[]{
+                new WaveRenderer(new Color(100,200,150), getH(), getW())
+        };
+
         AtomicBoolean paused = new AtomicBoolean(true);
         var pause = new PlayButton(nextPosition(), (int) (getH()*0.9f),size,size, Color.DARK_GRAY," ||");
         pause.setAction(() -> {
@@ -231,13 +242,12 @@ public class WavePlayer extends NvComp {
         if(mic != null){
             mic.copyLatest(waveBuffer);
             markDirty();
-        }
-
-        if(limiter > 10){
-            limiter = 0;
-            updateLine();
         }else{
-            limiter += dt*1000;
+            var percentage = AudioManager.getCurrentPercentageExternal(filePaths[current]);
+            currentTime = percentage * maxDurationMs / 100;
+            durationLabel.changeText(getFormattedDuration());
+            if(renderers[currentRenderer] instanceof LineUser line)
+                line.updateLine(percentage);
         }
 
         currentTime += dt;
@@ -253,7 +263,6 @@ public class WavePlayer extends NvComp {
             return;
         }
 
-        WaveRenderer.drawWaveform(g, waveBuffer, getW(), getH()*0.8f);
-        g.drawLine(lineX1, 0f, lineX1, lineY2, 3);
+        renderers[currentRenderer].render(g, waveBuffer, getW(), getH()*0.8f);
     }
 }
