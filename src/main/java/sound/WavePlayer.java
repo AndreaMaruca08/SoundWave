@@ -6,6 +6,7 @@ import nv.core.io.AudioManager;
 import nv.utils.shapes.dynamic.NvLabel;
 import sound.audioRendering.AudioRenderer;
 import sound.audioRendering.LineUser;
+import sound.audioRendering.pond.PondRendering;
 import sound.audioRendering.WaveRenderer;
 import sound.loading.DecodeManager;
 
@@ -37,8 +38,9 @@ public class WavePlayer extends NvComp {
     private int maxDurationMs;
     private int currentVolume = 100;
 
-    private short[] waveBuffer = new short[DISPLAY_SAMPLES];
+    public short[] waveBuffer = new short[DISPLAY_SAMPLES];
 
+    @SuppressWarnings("unused")
     public WavePlayer(
             int x,
             int y,
@@ -77,7 +79,6 @@ public class WavePlayer extends NvComp {
             mic = null;
             return;
         }
-
 
         var samples = DecodeManager.decode(filePaths[0]);
 
@@ -145,6 +146,7 @@ public class WavePlayer extends NvComp {
         AudioManager.setVolumeExternal(filePaths[current], currentVolume);
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[current]);
         waveBuffer = newSamples;
+        renderers[currentRenderer].reload(waveBuffer);
     }
 
     private int cX = 0;
@@ -159,7 +161,8 @@ public class WavePlayer extends NvComp {
         var size = 80;
 
         renderers = new AudioRenderer[]{
-                new WaveRenderer(new Color(100,255,100), getH(), getW())
+                new WaveRenderer(new Color(100,255,100), getH(), getW()),
+                new PondRendering(this),
         };
 
         AtomicBoolean paused = new AtomicBoolean(true);
@@ -173,12 +176,15 @@ public class WavePlayer extends NvComp {
                 pause.setDisplay("||");
                 pause.markDirty();
                 going = false;
+                renderers[currentRenderer].stop();
             }else{
                 AudioManager.playExternal(filePaths[current]);
                 AudioManager.skipExternal(filePaths[current], pausedTime);
                 pause.setDisplay("GO");
                 pause.markDirty();
                 going = true;
+                renderers[currentRenderer].start();
+
             }
         });
 
@@ -252,6 +258,34 @@ public class WavePlayer extends NvComp {
             AudioManager.setSpeedExternal(filePaths[current], currentSpeed);
         });
 
+        nextPosition();
+
+        var nextRenderer = new PlayButton(nextPosition(), y,size*3,size, Color.DARK_GRAY," Next graph");
+        nextRenderer.setAction(() -> {
+            renderers[currentRenderer].stop();
+            currentRenderer++;
+            if(currentRenderer > renderers.length - 1){
+                currentRenderer = 0;
+            }
+            renderers[currentRenderer].start();
+            reset();
+        });
+        nextPosition();
+        nextPosition();
+        var previousRenderer = new PlayButton(nextPosition(), y,size*3,size, Color.DARK_GRAY," Prev graph");
+        previousRenderer.setAction(() -> {
+            renderers[currentRenderer].stop();
+            currentRenderer--;
+            if(currentRenderer < 0){
+                currentRenderer = renderers.length - 1;
+            }
+            renderers[currentRenderer].start();
+
+            reset();
+        });
+
+        addChild(previousRenderer);
+        addChild(nextRenderer);
         addChild(speedLabel);
         addChild(nextSound);
         addChild(previousSound);
@@ -282,20 +316,18 @@ public class WavePlayer extends NvComp {
                     line.updateLine(percentage);
             }
         }
-
-        currentTime += dt;
     }
 
 
     @Override
     public void drawIntern(NvGraphic g) {
         if(error){
-            g.drawRect(0,0,1000,1000,0,0,0);
+            g.drawRect(0,0,2000,1000,0,0,0);
             g.setRGB(1,1,1);
-            g.drawText("Error: empty directory /audio_files", 150,500);
+            g.drawText("Error: empty directory /audio_files, use .wav .mp3 .ogg", 150,500);
             return;
         }
 
-        renderers[currentRenderer].render(g, waveBuffer, getW(), getH()*0.8f);
+        renderers[currentRenderer].render(g, waveBuffer, getW(), getH()*0.8f, currentTime);
     }
 }

@@ -1,17 +1,18 @@
 package sound.audioRendering;
 
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
 import nv.core.graphic.NvGraphic;
-import nv.core.io.AudioManager;
 
 import java.awt.*;
 
 public class WaveRenderer implements AudioRenderer, LineUser {
-    private float red = -1, green, blue;
+    private final float red, green, blue;
 
     private final float w;
-    private float lineX1, lineY2;
+    private float lineX1;
+    private final float lineY2;
+
+    private boolean going = false;
 
     public WaveRenderer(Color color, float h, float w){
         this.red = color.getRed() / 255f;
@@ -22,11 +23,15 @@ public class WaveRenderer implements AudioRenderer, LineUser {
     }
 
     @Override
+    public void reload(short[] samples) {}
+
+    @Override
     public void render(
             NvGraphic g,
             short[] samples,
             float width,
-            float height
+            float height,
+            float currentTime
     ) {
         int pixels = (int) width;
         int samplesPerPixel = samples.length / pixels;
@@ -69,7 +74,19 @@ public class WaveRenderer implements AudioRenderer, LineUser {
         g.drawLine(lineX1, 0f, lineX1, lineY2, 3);
     }
 
+    @Override
+    public void start() {
+        going = true;
+    }
+
+    @Override
+    public void stop() {
+        going = false;
+    }
+
     public void updateLine(float percentage){
+        if(!going)
+            return;
         lineX1 = w * (percentage/100);
         NvContext.markSceneDirty();
 
