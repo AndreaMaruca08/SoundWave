@@ -16,7 +16,7 @@ void main() {
 
     var page = context.addAndSetPage("Main", NvCont.newPage());
     page.setBackground(0,0,0);
-    context.changeFont(new Font("monospaced", Font.PLAIN, 35));
+    context.changeFont(new Font("monospaced", Font.PLAIN, 30));
 
     int margin = 150;
 

@@ -1,6 +1,5 @@
 package sound;
 
-import nv.core.NvContext;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
@@ -11,7 +10,6 @@ import sound.audioRendering.WaveRenderer;
 import sound.loading.DecodeManager;
 
 import java.awt.*;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WavePlayer extends NvComp {
@@ -21,20 +19,23 @@ public class WavePlayer extends NvComp {
 
     private final HudLabel title;
     private final HudLabel durationLabel;
+    private HudLabel speedLabel;
 
     private final String[] filePaths;
     private AudioRenderer[] renderers;
     private int currentRenderer = 0;
 
+    private float currentSpeed = 1;
+
     private int current = 0;
 
+    private boolean going = false;
     private boolean error = false;
+
+    private int pausedTime = 0;
 
     private int maxDurationMs;
     private int currentVolume = 100;
-
-    private float lineX1;
-    private final float lineY2 = getH()*0.8f;
 
     private short[] waveBuffer = new short[DISPLAY_SAMPLES];
 
@@ -57,6 +58,7 @@ public class WavePlayer extends NvComp {
         title.changeText("Microphone");
         addChild(title);
     }
+
     public WavePlayer(
             int x,
             int y,
@@ -96,7 +98,7 @@ public class WavePlayer extends NvComp {
         addChild(title);
         addChild(durationLabel);
         this.mic = null;
-        initBtn();
+        init();
     }
 
     private String getFormattedDuration(){
@@ -112,6 +114,9 @@ public class WavePlayer extends NvComp {
 
     public void next(){
         AudioManager.stopExternal(filePaths[current]);
+        AudioManager.setSpeedExternal(filePaths[current], 1);
+        currentSpeed = 1;
+        speedLabel.changeText("Speed: 1,0x");
         current++;
         if(current > filePaths.length - 1){
             current = 0;
@@ -121,10 +126,13 @@ public class WavePlayer extends NvComp {
 
     public void previous(){
         AudioManager.stopExternal(filePaths[current]);
+        AudioManager.setSpeedExternal(filePaths[current], 1);
+        currentSpeed = 1;
         current--;
         if(current < 0){
             current = filePaths.length - 1;
         }
+        speedLabel.changeText("Speed: 1,0x");
         reset();
     }
 
@@ -147,11 +155,11 @@ public class WavePlayer extends NvComp {
 
     private float currentTime = 0;
 
-    private void initBtn(){
+    private void init(){
         var size = 80;
 
         renderers = new AudioRenderer[]{
-                new WaveRenderer(new Color(100,200,150), getH(), getW())
+                new WaveRenderer(new Color(100,255,100), getH(), getW())
         };
 
         AtomicBoolean paused = new AtomicBoolean(true);
@@ -160,13 +168,17 @@ public class WavePlayer extends NvComp {
             paused.set(!paused.get());
 
             if(paused.get()){
+                pausedTime = (int) currentTime;
                 AudioManager.stopExternal(filePaths[current]);
                 pause.setDisplay("||");
                 pause.markDirty();
+                going = false;
             }else{
                 AudioManager.playExternal(filePaths[current]);
+                AudioManager.skipExternal(filePaths[current], pausedTime);
                 pause.setDisplay("GO");
                 pause.markDirty();
+                going = true;
             }
         });
 
@@ -207,13 +219,40 @@ public class WavePlayer extends NvComp {
             volume.changeText("Volume: " + currentVolume);
             markDirty();
         });
-        nextPosition();
+
         var nextSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), " Next");
         nextSound.setAction(this::next);
         nextPosition();
         var previousSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), "Previous");
         previousSound.setAction(this::previous);
 
+        speedLabel = new HudLabel(30,100);
+        speedLabel.setRgb(1,1,1);
+        speedLabel.changeText("Speed: 1.0x");
+
+        nextPosition();
+
+        var slow = new PlayButton(nextPosition(), y,size*2,size, Color.DARK_GRAY," Slower");
+        slow.setAction(() -> {
+            currentSpeed -= 0.05f;
+            if(currentSpeed < 0.05f)
+                currentSpeed = 0.05f;
+
+            speedLabel.changeText("Speed: " + String.format("%.2f", currentSpeed) + "x");
+            AudioManager.setSpeedExternal(filePaths[current], currentSpeed);
+        });
+        nextPosition();
+        var fast = new PlayButton(nextPosition(), y,size*2,size, Color.DARK_GRAY," Faster");
+        fast.setAction(() -> {
+            currentSpeed += 0.05f;
+            if(currentSpeed > 29f){
+                currentSpeed = 29f;
+            }
+            speedLabel.changeText("Speed: " + String.format("%.2f", currentSpeed) + "x");
+            AudioManager.setSpeedExternal(filePaths[current], currentSpeed);
+        });
+
+        addChild(speedLabel);
         addChild(nextSound);
         addChild(previousSound);
         addChild(pause);
@@ -222,16 +261,8 @@ public class WavePlayer extends NvComp {
         addChild(plusVolume);
         addChild(minusVolume);
         addChild(volume);
-    }
-
-    private float limiter = 0;
-
-    private void updateLine(){
-        var percentage = AudioManager.getCurrentPercentageExternal(filePaths[current]);
-        lineX1 = getW() * (percentage/100);
-        currentTime = percentage * maxDurationMs / 100;
-        durationLabel.changeText(getFormattedDuration());
-        NvContext.markSceneDirty();
+        addChild(slow);
+        addChild(fast);
     }
 
     @Override
@@ -245,9 +276,11 @@ public class WavePlayer extends NvComp {
         }else{
             var percentage = AudioManager.getCurrentPercentageExternal(filePaths[current]);
             currentTime = percentage * maxDurationMs / 100;
-            durationLabel.changeText(getFormattedDuration());
-            if(renderers[currentRenderer] instanceof LineUser line)
-                line.updateLine(percentage);
+            if(going){
+                durationLabel.changeText(getFormattedDuration());
+                if(renderers[currentRenderer] instanceof LineUser line)
+                    line.updateLine(percentage);
+            }
         }
 
         currentTime += dt;
