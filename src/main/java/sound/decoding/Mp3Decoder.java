@@ -1,19 +1,19 @@
 package sound.decoding;
 
+import javazoom.jl.decoder.*;
 
-import javazoom.jl.decoder.Bitstream;
-import javazoom.jl.decoder.Decoder;
-import javazoom.jl.decoder.Header;
-import javazoom.jl.decoder.SampleBuffer;
-
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.util.ArrayList;
+
+import static nv.core.errors.NvLogger.logErr;
 
 public class Mp3Decoder implements AudioDecoder {
+
+    private static final int TARGET_RATE = 44100;
+
     @Override
     public short[] decode(String fileName) {
+
         if (!fileName.toLowerCase().endsWith(".mp3")) {
             throw new IllegalArgumentException("File is not a mp3 file");
         }
@@ -21,45 +21,68 @@ public class Mp3Decoder implements AudioDecoder {
         try {
             Bitstream bitstream = new Bitstream(new FileInputStream(fileName));
             Decoder decoder = new Decoder();
-
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-
+            ArrayList<Short> rawSamples = new ArrayList<>();
             Header header;
+            int sampleRate = TARGET_RATE;
 
             while ((header = bitstream.readFrame()) != null) {
 
-                SampleBuffer buffer =
-                        (SampleBuffer) decoder.decodeFrame(header, bitstream);
+                SampleBuffer output = (SampleBuffer) decoder.decodeFrame(header, bitstream);
 
-                short[] samples = buffer.getBuffer();
-                int length = buffer.getBufferLength();
+                sampleRate = output.getSampleFrequency();
 
-                ByteBuffer bb = ByteBuffer.allocate(length * 2)
-                        .order(ByteOrder.LITTLE_ENDIAN);
+                short[] buffer = output.getBuffer();
 
-                for (int i = 0; i < length; i++) {
-                    bb.putShort(samples[i]);
+                if (output.getChannelCount() == 2) {
+
+                    for (int i = 0; i < output.getBufferLength(); i += 2) {
+                        rawSamples.add((short)((buffer[i] + buffer[i + 1]) / 2)
+                        );
+                    }
+
+                } else {
+                    for (int i = 0; i < output.getBufferLength(); i++) {
+                        rawSamples.add(buffer[i]);
+                    }
                 }
-
-                output.write(bb.array());
 
                 bitstream.closeFrame();
             }
 
             bitstream.close();
 
-            byte[] bytes = output.toByteArray();
+            short[] samples = new short[rawSamples.size()];
 
-            short[] samples = new short[bytes.length / 2];
+            for (int i = 0; i < samples.length; i++) {
+                samples[i] = rawSamples.get(i);
+            }
 
-            ByteBuffer.wrap(bytes)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .asShortBuffer()
-                    .get(samples);
+            if (sampleRate != TARGET_RATE) {
+                samples = resample(samples, sampleRate);
+            }
 
             return samples;
-        }catch (Exception e){
+
+
+        } catch (Exception e) {
+            logErr("Error while decoding mp3: " + e.getMessage());
             return new short[0];
         }
+    }
+
+
+    private short[] resample(short[] input, int fromRate) {
+
+        int outputLength = (int)((long) input.length * Mp3Decoder.TARGET_RATE / fromRate);
+
+        short[] output = new short[outputLength];
+
+
+        for (int i = 0; i < outputLength; i++) {
+            int src = (int)((long)i * fromRate / Mp3Decoder.TARGET_RATE);
+            output[i] = input[src];
+        }
+
+        return output;
     }
 }

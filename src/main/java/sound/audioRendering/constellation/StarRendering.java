@@ -1,6 +1,8 @@
-package sound.audioRendering;
+package sound.audioRendering.constellation;
 
 import nv.core.graphic.NvGraphic;
+import sound.audioRendering.AudioRenderer;
+import sound.audioRendering.WavePlayer;
 
 import java.util.Arrays;
 import java.util.Random;

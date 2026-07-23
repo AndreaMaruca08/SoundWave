@@ -5,7 +5,11 @@ import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
 import nv.utils.shapes.dynamic.NvLabel;
 import sound.Microphone;
+import sound.audioRendering.constellation.StarRendering;
+import sound.audioRendering.liquid.LiquidMetalRenderer;
+import sound.audioRendering.nebula.NebulaRenderer;
 import sound.audioRendering.pond.PondRendering;
+import sound.audioRendering.waveView.WaveRenderer;
 import sound.decoding.DecodeManager;
 
 import java.awt.*;
@@ -161,7 +165,9 @@ public class WavePlayer extends NvComp {
         renderers = new AudioRenderer[]{
                 new WaveRenderer(new Color(100,255,100), getH(), getW()),
                 new PondRendering(this),
-                new StarRendering(this)
+                new StarRendering(this),
+                new NebulaRenderer(),
+                new LiquidMetalRenderer()
         };
 
         AtomicBoolean paused = new AtomicBoolean(true);

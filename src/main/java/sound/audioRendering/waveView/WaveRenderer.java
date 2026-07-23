@@ -1,7 +1,9 @@
-package sound.audioRendering;
+package sound.audioRendering.waveView;
 
 import nv.core.NvContext;
 import nv.core.graphic.NvGraphic;
+import sound.audioRendering.AudioRenderer;
+import sound.audioRendering.LineUser;
 
 import java.awt.*;
 
