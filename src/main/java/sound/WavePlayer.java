@@ -6,6 +6,7 @@ import nv.core.io.AudioManager;
 import nv.utils.shapes.dynamic.NvLabel;
 import sound.audioRendering.AudioRenderer;
 import sound.audioRendering.LineUser;
+import sound.audioRendering.StarRendering;
 import sound.audioRendering.pond.PondRendering;
 import sound.audioRendering.WaveRenderer;
 import sound.loading.DecodeManager;
@@ -163,6 +164,7 @@ public class WavePlayer extends NvComp {
         renderers = new AudioRenderer[]{
                 new WaveRenderer(new Color(100,255,100), getH(), getW()),
                 new PondRendering(this),
+                new StarRendering(this)
         };
 
         AtomicBoolean paused = new AtomicBoolean(true);

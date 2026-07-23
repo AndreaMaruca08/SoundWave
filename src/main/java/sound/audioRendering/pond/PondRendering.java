@@ -5,8 +5,8 @@ import sound.WavePlayer;
 import sound.audioRendering.AudioRenderer;
 
 public class PondRendering implements AudioRenderer {
-    private static final int WINDOW = 8192;
-    private static final int MINIMUM = 4000;
+    private static final int WINDOW = 1024;
+    private static final int MINIMUM = 5000;
 
     private float[] peaks;
     private double average = 0.3f;
@@ -56,6 +56,7 @@ public class PondRendering implements AudioRenderer {
         player.addChild(new Circle(x,y, amplitude, average));
     }
 
+    @Override
     public void reload(short[] samples) {
         peaks = new float[(samples.length + WINDOW - 1) / WINDOW];
 
