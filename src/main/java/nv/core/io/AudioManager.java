@@ -297,7 +297,7 @@ public final class AudioManager {
         } catch(Exception e) {
 
             logErr(
-                    "External audio loading failed: "
+                    "External audio decoding failed: "
                             + e.getMessage()
             );
 
@@ -636,7 +636,7 @@ public final class AudioManager {
             return bufferId;
 
         } catch (Exception e) {
-            logErr("OGG loading failed: " + e.getMessage());
+            logErr("OGG decoding failed: " + e.getMessage());
             if (fileBuffer != null) {
                 MemoryUtil.memFree(fileBuffer);
             }
@@ -682,7 +682,7 @@ public final class AudioManager {
                 }
             }
         } catch (Exception e) {
-            logErr("JavaSound loading failed: " + e.getMessage());
+            logErr("JavaSound decoding failed: " + e.getMessage());
             return -1;
         }
     }

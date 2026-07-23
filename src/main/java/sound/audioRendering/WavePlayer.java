@@ -1,15 +1,12 @@
-package sound;
+package sound.audioRendering;
 
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
 import nv.utils.shapes.dynamic.NvLabel;
-import sound.audioRendering.AudioRenderer;
-import sound.audioRendering.LineUser;
-import sound.audioRendering.StarRendering;
+import sound.Microphone;
 import sound.audioRendering.pond.PondRendering;
-import sound.audioRendering.WaveRenderer;
-import sound.loading.DecodeManager;
+import sound.decoding.DecodeManager;
 
 import java.awt.*;
 import java.util.concurrent.atomic.AtomicBoolean;

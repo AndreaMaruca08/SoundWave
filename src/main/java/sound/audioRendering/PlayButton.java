@@ -1,4 +1,4 @@
-package sound;
+package sound.audioRendering;
 
 import nv.core.components.NvRgbComp;
 import nv.core.graphic.NvGraphic;

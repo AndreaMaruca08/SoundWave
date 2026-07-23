@@ -1,7 +1,6 @@
 package sound.audioRendering;
 
 import nv.core.graphic.NvGraphic;
-import sound.WavePlayer;
 
 import java.util.Arrays;
 import java.util.Random;

@@ -1,7 +1,7 @@
 package sound.audioRendering.pond;
 
 import nv.core.graphic.NvGraphic;
-import sound.WavePlayer;
+import sound.audioRendering.WavePlayer;
 import sound.audioRendering.AudioRenderer;
 
 public class PondRendering implements AudioRenderer {

@@ -1,4 +1,4 @@
-package sound.loading;
+package sound.decoding;
 
 import javax.sound.sampled.*;
 import java.io.File;

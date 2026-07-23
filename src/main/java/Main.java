@@ -1,9 +1,8 @@
 import nv.core.ContextBuilder;
-import nv.core.ScreenSize;
 import nv.core.components.NvCont;
 import nv.core.graphic.NvGraphic;
 import sound.MovingCamera;
-import sound.WavePlayer;
+import sound.audioRendering.WavePlayer;
 
 import java.awt.*;
 import java.util.List;
