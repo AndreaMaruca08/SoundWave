@@ -17,7 +17,6 @@ public class Mp3Decoder implements AudioDecoder {
         return EXTENSION;
     }
 
-
     @Override
     public short[] decode(String fileName) {
 
@@ -82,7 +81,6 @@ public class Mp3Decoder implements AudioDecoder {
         int outputLength = (int)((long) input.length * Mp3Decoder.TARGET_RATE / fromRate);
 
         short[] output = new short[outputLength];
-
 
         for (int i = 0; i < outputLength; i++) {
             int src = (int)((long)i * fromRate / Mp3Decoder.TARGET_RATE);

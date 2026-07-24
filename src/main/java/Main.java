@@ -55,6 +55,10 @@ private List<String> getAudioPaths() {
     try (Stream<Path> stream = Files.walk(folder)) {
         paths = stream
                 .filter(Files::isRegularFile)
+                .filter(p -> {
+                    String name = p.getFileName().toString().toLowerCase();
+                    return name.endsWith(".mp3") || name.endsWith(".ogg") || name.endsWith(".wav");
+                })
                 .map(p -> p.toAbsolutePath().toString())
                 .toList();
 
