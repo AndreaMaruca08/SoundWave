@@ -6,10 +6,17 @@ import java.io.IOException;
 
 public class WavDecoder implements AudioDecoder {
 
+    private static final String EXTENSION = ".wav";
+
+    @Override
+    public String getExtension() {
+        return EXTENSION;
+    }
+
     @Override
     public short[] decode(String fileName) {
 
-        if (!fileName.toLowerCase().endsWith(".wav")) {
+        if (!fileName.toLowerCase().endsWith(EXTENSION)) {
             throw new IllegalArgumentException("File is not a wav file");
         }
 

@@ -10,11 +10,18 @@ import static nv.core.errors.NvLogger.logErr;
 public class Mp3Decoder implements AudioDecoder {
 
     private static final int TARGET_RATE = 44100;
+    private static final String EXTENSION = ".mp3";
+
+    @Override
+    public String getExtension() {
+        return EXTENSION;
+    }
+
 
     @Override
     public short[] decode(String fileName) {
 
-        if (!fileName.toLowerCase().endsWith(".mp3")) {
+        if (!fileName.toLowerCase().endsWith(EXTENSION)) {
             throw new IllegalArgumentException("File is not a mp3 file");
         }
 
@@ -69,7 +76,6 @@ public class Mp3Decoder implements AudioDecoder {
             return new short[0];
         }
     }
-
 
     private short[] resample(short[] input, int fromRate) {
 

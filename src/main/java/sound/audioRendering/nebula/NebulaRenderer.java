@@ -140,8 +140,8 @@ public class NebulaRenderer implements AudioRenderer {
 
             float angle=noise*6.28f;
 
-            p.vx+=Math.cos(angle)*0.003f;
-            p.vy+=Math.sin(angle)*0.003f;
+            p.vx+= (float) (Math.cos(angle)*0.003f);
+            p.vy+= (float) (Math.sin(angle)*0.003f);
 
 
             p.vx*=0.985f;
@@ -205,16 +205,5 @@ public class NebulaRenderer implements AudioRenderer {
         going=false;
     }
 
-    private static class Particle{
 
-        float x;
-        float y;
-
-        float vx;
-        float vy;
-
-        float size;
-
-        float phase;
-    }
 }
