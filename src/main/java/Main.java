@@ -20,10 +20,10 @@ void main() {
 
     int margin = 150;
 
-    var w = (int) context.getRenderWidth() - margin*2;
+    var w = (int) context.getRenderWidth();
     var h = (int) context.getRenderHeight();
 
-    MovingCamera camera = new MovingCamera((int) (w/1.9f), (int) (h/2.15f));
+    MovingCamera camera = new MovingCamera((int) (w/2.15f), (int) (h/2.30f));
     camera.setNeedCamera(true);
     context.setCurrentCameraUpdateCycle(camera);
 
@@ -32,7 +32,7 @@ void main() {
 
     WavePlayer display = new WavePlayer(
             margin, 0,
-            w, h,
+            w - margin*3, h,
             getAudioPaths().toArray(new String[0])
     );
 

@@ -49,7 +49,10 @@ public class StarRendering implements AudioRenderer {
             star.vx = (random.nextFloat() - 0.5f) * 0.15f;
             star.vy = (random.nextFloat() - 0.5f) * 0.15f;
 
-            star.radius = 1 + random.nextFloat() * 2;
+            star.radius = (1 + random.nextFloat() * 2) * 2;
+
+            star.x -= star.radius;
+            star.y -= star.radius;
 
             star.energy = random.nextFloat() * 0.2f;
 

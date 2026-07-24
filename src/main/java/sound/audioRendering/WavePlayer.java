@@ -116,10 +116,7 @@ public class WavePlayer extends NvComp {
     }
 
     public void next(){
-        AudioManager.stopExternal(filePaths[current]);
-        AudioManager.setSpeedExternal(filePaths[current], 1);
-        currentSpeed = 1;
-        speedLabel.changeText("Speed: 1,0x");
+        stopAndResetSpeed();
         current++;
         if(current > filePaths.length - 1){
             current = 0;
@@ -128,17 +125,21 @@ public class WavePlayer extends NvComp {
     }
 
     public void previous(){
-        AudioManager.stopExternal(filePaths[current]);
-        AudioManager.setSpeedExternal(filePaths[current], 1);
-        currentSpeed = 1;
+        stopAndResetSpeed();
         current--;
         if(current < 0){
             current = filePaths.length - 1;
         }
-        speedLabel.changeText("Speed: 1,0x");
         reset();
     }
 
+    private void stopAndResetSpeed(){
+        AudioManager.stopExternal(filePaths[current]);
+        AudioManager.setSpeedExternal(filePaths[current], 1);
+        currentSpeed = 1;
+        speedLabel.changeText("Speed: 1,0x");
+
+    }
     private void reset(){
         var p = filePaths[current];
         var newSamples = DecodeManager.decode(p);
