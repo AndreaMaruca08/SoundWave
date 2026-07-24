@@ -21,12 +21,7 @@ public class WavDecoder implements AudioDecoder {
         }
 
         try {
-
-            AudioInputStream originalStream =
-                    AudioSystem.getAudioInputStream(
-                            new File(fileName)
-                    );
-
+            AudioInputStream originalStream = AudioSystem.getAudioInputStream(new File(fileName));
 
             AudioFormat originalFormat = originalStream.getFormat();
 
@@ -40,18 +35,11 @@ public class WavDecoder implements AudioDecoder {
                     false
             );
 
-            AudioInputStream pcmStream =
-                    AudioSystem.getAudioInputStream(
-                            targetFormat,
-                            originalStream
-                    );
-
+            AudioInputStream pcmStream = AudioSystem.getAudioInputStream(targetFormat, originalStream);
 
             byte[] bytes = pcmStream.readAllBytes();
 
-
             short[] samples = new short[bytes.length / 2];
-
 
             for (int i = 0; i < samples.length; i++) {
 
@@ -61,10 +49,8 @@ public class WavDecoder implements AudioDecoder {
                 samples[i] = (short) ((high << 8) | low);
             }
 
-
             pcmStream.close();
             originalStream.close();
-
 
             return samples;
 

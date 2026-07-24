@@ -6,10 +6,12 @@ import java.util.Map;
 public class DecodeManager {
     private static final WavDecoder wav = new WavDecoder();
     private static final Mp3Decoder mp3 = new Mp3Decoder();
+    private static final OggVorbisDecoder ogg = new OggVorbisDecoder();
 
     private static final Map<String, AudioDecoder> DECODERS = Map.of(
             wav.getExtension(), wav,
-            mp3.getExtension(), mp3
+            mp3.getExtension(), mp3,
+            ogg.getExtension(), ogg
     );
 
     private static final Map<String, short[]> decodedCache = new HashMap<>(10);
@@ -21,7 +23,12 @@ public class DecodeManager {
         if(decodedCache.containsKey(filePath))
             return decodedCache.get(filePath);
 
-        var decoded = get(filePath).decode(filePath);
+        var decoder = get(filePath);
+        if(decoder == null){
+            return new short[0];
+        }
+
+        var decoded = decoder.decode(filePath);
         decodedCache.put(filePath, decoded);
 
         return decoded;
