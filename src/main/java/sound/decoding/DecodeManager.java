@@ -16,14 +16,14 @@ public class DecodeManager {
 
     private static final Map<String, short[]> decodedCache = new HashMap<>(10);
 
-    public static AudioDecoder get(String filePath){
+    public static AudioDecoder getDecoder(String filePath){
         return DECODERS.get(filePath.substring(filePath.lastIndexOf(".")));
     }
     public static short[] decode(String filePath){
         if(decodedCache.containsKey(filePath))
             return decodedCache.get(filePath);
 
-        var decoder = get(filePath);
+        var decoder = getDecoder(filePath);
         if(decoder == null){
             return new short[0];
         }

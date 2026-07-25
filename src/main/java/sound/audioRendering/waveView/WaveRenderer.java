@@ -7,14 +7,12 @@ import sound.audioRendering.LineUser;
 
 import java.awt.*;
 
-public class WaveRenderer implements AudioRenderer, LineUser {
+public class WaveRenderer extends AudioRenderer implements LineUser {
     private final float red, green, blue;
 
     private final float w;
     private float lineX1;
     private final float lineY2;
-
-    private boolean going = false;
 
     public WaveRenderer(Color color, float h, float w){
         this.red = color.getRed() / 255f;
@@ -28,12 +26,11 @@ public class WaveRenderer implements AudioRenderer, LineUser {
     public void reload(short[] samples) {}
 
     @Override
-    public void render(
-            NvGraphic g,
-            short[] samples,
-            float width,
-            float height,
-            float currentTime
+    public void render(NvGraphic g,
+                       short[] samples,
+                       float width,
+                       float height,
+                       float currentTime
     ) {
         int pixels = (int) width;
         int samplesPerPixel = samples.length / pixels;
@@ -77,14 +74,13 @@ public class WaveRenderer implements AudioRenderer, LineUser {
     }
 
     @Override
-    public void start() {
-        going = true;
-    }
-
-    @Override
-    public void stop() {
-        going = false;
-    }
+    public void renderInternal(
+            NvGraphic g,
+            short[] samples,
+            float width,
+            float height,
+            float currentTime
+    ) {}
 
     public void updateLine(float percentage){
         if(!going)

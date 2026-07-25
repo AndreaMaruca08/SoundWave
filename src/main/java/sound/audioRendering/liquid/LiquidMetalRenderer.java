@@ -3,13 +3,9 @@ package sound.audioRendering.liquid;
 import nv.core.graphic.NvGraphic;
 import sound.audioRendering.AudioRenderer;
 
-public class LiquidMetalRenderer implements AudioRenderer {
+public class LiquidMetalRenderer extends AudioRenderer {
 
     private static final int POINTS=480;
-    private static final int WINDOW=1024;
-
-    private float[] peaks;
-    private float peakDuration;
 
     private float time=0;
     private float energy=0;
@@ -23,39 +19,8 @@ public class LiquidMetalRenderer implements AudioRenderer {
 
     private float baseRadius=400;
 
-
     @Override
-    public void reload(short[] samples){
-
-        peaks=new float[(samples.length+WINDOW-1)/WINDOW];
-        peakDuration=WINDOW/44100f;
-
-        int index=0;
-
-        for(int i=0;i<samples.length;i+=WINDOW){
-
-            int max=0;
-
-            for(int j=i;j<i+WINDOW&&j<samples.length;j++){
-
-                int value=Math.abs(samples[j]);
-
-                if(value>max)
-                    max=value;
-            }
-
-            peaks[index++]=max/32767f;
-        }
-    }
-
-
-    @Override
-    public void render(NvGraphic g,short[] samples,float width,float height,float currentTime){
-
-        if(!going)
-            return;
-
-
+    public void renderInternal(NvGraphic g, short[] samples, float width, float height, float currentTime){
         updateAudio(currentTime);
 
         time+=0.03f+energy*0.1f;
@@ -70,20 +35,15 @@ public class LiquidMetalRenderer implements AudioRenderer {
 
 
     private void updateAudio(float currentTime){
-
         int index=(int)((currentTime/1000f)/peakDuration);
-
 
         if(index>=0&&index<peaks.length&&index!=lastPeak){
             lastPeak=index;
             energy=peaks[index];
         }
 
-
         energy*=0.95f;
     }
-
-
 
     private void updateShape(float cx,float cy){
 
@@ -99,8 +59,6 @@ public class LiquidMetalRenderer implements AudioRenderer {
         }
     }
 
-
-
     private void drawShape(NvGraphic g){
 
         for(int i=0;i<POINTS;i++){
@@ -109,7 +67,6 @@ public class LiquidMetalRenderer implements AudioRenderer {
 
             if(next>=POINTS)
                 next=0;
-
 
             g.drawLine(
                     px[i],
@@ -122,18 +79,5 @@ public class LiquidMetalRenderer implements AudioRenderer {
                     1f
             );
         }
-    }
-
-
-
-    @Override
-    public void start(){
-        going=true;
-    }
-
-
-    @Override
-    public void stop(){
-        going=false;
     }
 }

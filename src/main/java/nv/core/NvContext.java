@@ -231,7 +231,7 @@ public final class NvContext implements Runnable {
 
     /**
      *  <h2>To create a new page, use: NvCont.newPage()</h2>
-     * @param key key to get or change the page
+     * @param key key to getDecoder or change the page
      * @param page page to add
      */
     public NvCont addPage(String key, NvCont page){

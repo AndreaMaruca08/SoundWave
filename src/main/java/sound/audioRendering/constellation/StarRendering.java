@@ -7,20 +7,10 @@ import sound.audioRendering.WavePlayer;
 import java.util.Arrays;
 import java.util.Random;
 
-public class StarRendering implements AudioRenderer {
-
-    private static final int WINDOW = 1024;
-    private static final int MINIMUM = 3000;
-
+public class StarRendering extends AudioRenderer {
     private static final int STAR_COUNT = 1000;
     private static final int CONNECTIONS = 4;
     private static final float CONNECTION_DISTANCE = 100;
-
-    private float[] peaks;
-    private double average = 0.3f;
-    private float peakDuration;
-
-    private boolean going = false;
 
     private final Random random = new Random();
 
@@ -62,20 +52,14 @@ public class StarRendering implements AudioRenderer {
 
 
     @Override
-    public void render(
+    public void renderInternal(
             NvGraphic g,
             short[] samples,
             float width,
             float height,
             float currentTime
     ) {
-
-        if (!going)
-            return;
-
-
         updateStars(width, height);
-
 
         int index = (int)((currentTime / 1000f) / peakDuration);
 
@@ -99,7 +83,6 @@ public class StarRendering implements AudioRenderer {
                 }
             }
         }
-
 
         drawConnections(g);
 
@@ -216,68 +199,5 @@ public class StarRendering implements AudioRenderer {
                 );
             }
         }
-    }
-
-
-    @Override
-    public void start() {
-        going = true;
-    }
-
-
-    @Override
-    public void stop() {
-        going = false;
-    }
-
-
-    @Override
-    public void reload(short[] samples) {
-
-        peaks = new float[
-                (samples.length + WINDOW - 1) / WINDOW
-                ];
-
-
-        float sum = 0;
-        long count = 0;
-
-
-        peakDuration = WINDOW / 44100f;
-
-
-        int index = 0;
-
-
-        for(int i = 0; i < samples.length; i += WINDOW) {
-
-            int max = 0;
-
-
-            for(int j = i; j < i + WINDOW && j < samples.length; j++) {
-                int value = Math.abs(samples[j]);
-
-
-                if(value > MINIMUM) {
-                    sum += value;
-                    count++;
-                }
-
-
-                if(value > max)
-                    max = value;
-            }
-
-
-            peaks[index++] =
-                    max / 32767f;
-        }
-
-
-        if(count > 0)
-            average =
-                    (sum / count) / 32767f;
-        else
-            average = 0;
     }
 }

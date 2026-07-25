@@ -5,21 +5,15 @@ import sound.audioRendering.AudioRenderer;
 
 import java.util.Random;
 
-public class NebulaRenderer implements AudioRenderer {
+public class NebulaRenderer extends AudioRenderer {
 
     private static final int PARTICLES=5000;
-    private static final int WINDOW=1024;
 
     private float noiseTime=0;
 
     private final Random random=new Random();
 
     private Particle[] particles;
-
-    private float[] peaks;
-    private float peakDuration;
-
-    private boolean going=false;
     private boolean initialized=false;
 
     private int lastPeak=-1;
@@ -27,29 +21,7 @@ public class NebulaRenderer implements AudioRenderer {
     private float energy=0;
 
     @Override
-    public void reload(short[] samples){
-        peaks = new float[(samples.length+WINDOW-1)/WINDOW];
-        peakDuration=WINDOW/44100f;
-
-        int index=0;
-
-        for(int i=0;i<samples.length;i+=WINDOW){
-            int max=0;
-
-            for(int j=i;j<i+WINDOW&&j<samples.length;j++){
-                int value=Math.abs(samples[j]);
-                if(value>max)max=value;
-            }
-
-            peaks[index++]=max/32767f;
-        }
-    }
-
-    @Override
-    public void render(NvGraphic g,short[] samples,float width,float height,float currentTime){
-
-        if(!going)return;
-
+    public void renderInternal(NvGraphic g, short[] samples, float width, float height, float currentTime){
         if(!initialized){
             createParticles(width,height);
             initialized=true;
@@ -194,16 +166,4 @@ public class NebulaRenderer implements AudioRenderer {
             );
         }
     }
-
-    @Override
-    public void start(){
-        going=true;
-    }
-
-    @Override
-    public void stop(){
-        going=false;
-    }
-
-
 }
