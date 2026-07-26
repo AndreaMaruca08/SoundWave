@@ -162,7 +162,7 @@ public class WavePlayer extends NvComp {
         if(renderers[currentRenderer] instanceof KeyboardListener key){
             NvContext.getInstance().setKeyboardFocus(key);
         }else{
-            NvContext.getInstance().setKeyboardFocus(null);
+            NvContext.getInstance().setKeyboardFocus(keyboardListener);
         }
     }
 
