@@ -1,11 +1,17 @@
 import nv.core.ContextBuilder;
 import nv.core.components.NvCont;
 import nv.core.graphic.NvGraphic;
+import nv.core.io.AppPathUtils;
 import sound.MovingCamera;
 import sound.audioRendering.WavePlayer;
 
 import java.awt.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static nv.core.errors.NvLogger.logErr;
 
@@ -44,7 +50,7 @@ void main() {
 }
 
 private List<String> getAudioPaths() {
-    Path folder = Paths.get("audio_files").toAbsolutePath();
+    Path folder = AppPathUtils.resolvePath("audio_files");
 
     try {
         Files.createDirectories(folder);
