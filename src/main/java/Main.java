@@ -33,7 +33,8 @@ void main() {
     WavePlayer display = new WavePlayer(
             margin, 0,
             w - margin*3, h,
-            getAudioPaths().toArray(new String[0])
+            getAudioPaths().toArray(new String[0]),
+            camera
     );
 
     page.addChild(display);

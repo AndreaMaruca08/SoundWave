@@ -1,11 +1,14 @@
 package sound.audioRendering;
 
+import nv.core.NvContext;
 import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
+import nv.core.io.KeyboardListener;
 import nv.utils.shapes.dynamic.NvLabel;
 import sound.Microphone;
 import sound.audioRendering.constellation.StarRendering;
+import sound.audioRendering.game.GameView;
 import sound.audioRendering.liquid.LiquidMetalRenderer;
 import sound.audioRendering.nebula.NebulaRenderer;
 import sound.audioRendering.pond.PondRendering;
@@ -28,6 +31,7 @@ public class WavePlayer extends NvComp {
     private AudioRenderer[] renderers;
     private int currentRenderer = 0;
 
+    private final KeyboardListener keyboardListener;
     private float currentSpeed = 1;
 
     private int current = 0;
@@ -48,7 +52,8 @@ public class WavePlayer extends NvComp {
             int y,
             int w,
             int h,
-            Microphone microphone
+            Microphone microphone,
+            KeyboardListener listener
     ) {
         super(x, y, w, h);
         this.mic = microphone;
@@ -56,6 +61,7 @@ public class WavePlayer extends NvComp {
         this.maxDurationMs = 0;
         this.title = new HudLabel(30, 30);
         this.durationLabel = new HudLabel(100,0);
+        this.keyboardListener = listener;
         durationLabel.changeText("");
         title.setHUD(true);
         title.setRgb(1,1,1);
@@ -68,7 +74,8 @@ public class WavePlayer extends NvComp {
             int y,
             int w,
             int h,
-            String[] filePaths
+            String[] filePaths,
+            KeyboardListener keyboardListener
     ) {
         super(x, y, w, h);
         if(filePaths.length == 0){
@@ -79,6 +86,7 @@ public class WavePlayer extends NvComp {
             this.durationLabel = new HudLabel(100,0);
             durationLabel.changeText("");
             mic = null;
+            this.keyboardListener = keyboardListener;
             return;
         }
 
@@ -87,6 +95,7 @@ public class WavePlayer extends NvComp {
         AudioManager.loadExternal(filePaths[0]);
         AudioManager.setVolumeExternal(filePaths[0], currentVolume);
 
+        this.keyboardListener = keyboardListener;
         this.waveBuffer = samples;
         this.filePaths = filePaths;
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[0]);
@@ -150,6 +159,11 @@ public class WavePlayer extends NvComp {
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[current]);
         waveBuffer = newSamples;
         renderers[currentRenderer].reload(waveBuffer);
+        if(renderers[currentRenderer] instanceof KeyboardListener key){
+            NvContext.getInstance().setKeyboardFocus(key);
+        }else{
+            NvContext.getInstance().setKeyboardFocus(null);
+        }
     }
 
     private int cX = 0;
@@ -168,7 +182,8 @@ public class WavePlayer extends NvComp {
                 new PondRendering(this),
                 new StarRendering(this),
                 new NebulaRenderer(),
-                new LiquidMetalRenderer()
+                new LiquidMetalRenderer(),
+                new GameView()
         };
 
         AtomicBoolean paused = new AtomicBoolean(true);

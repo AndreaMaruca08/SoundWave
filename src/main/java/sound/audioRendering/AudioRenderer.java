@@ -3,8 +3,8 @@ package sound.audioRendering;
 import nv.core.graphic.NvGraphic;
 
 public abstract class AudioRenderer {
-    protected static int WINDOW = 1024;
-    protected static int MINIMUM = 5000;
+    protected int WINDOW = 1024;
+    protected int MINIMUM = 5000;
 
     protected float[] peaks;
     protected float peakDuration;
