@@ -96,6 +96,8 @@ void registerNvBuild(String taskName, String platform, Object extraCfg) {
 
         archiveClassifier.set(platform)
 
+        mergeServiceFiles()
+
         manifest {
             attributes 'Main-Class': 'Main'
         }
@@ -115,6 +117,8 @@ tasks.register('nvBuildCurrent', ShadowJar) {
     configurations = [project.configurations.runtimeClasspath]
 
     archiveClassifier.set(project.ext.lwjglNatives as String)
+
+    mergeServiceFiles()
 
     manifest {
         attributes 'Main-Class': 'Main'
@@ -142,6 +146,8 @@ tasks.register('nvBuildAll', ShadowJar) {
     configurations = [project.configurations.runtimeClasspath] + allNativesCfgs
 
     archiveClassifier.set('universal')
+
+    mergeServiceFiles()
 
     manifest {
         attributes 'Main-Class': 'Main'
