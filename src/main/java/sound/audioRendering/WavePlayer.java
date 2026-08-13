@@ -26,6 +26,7 @@ public class WavePlayer extends NvComp {
     private final HudLabel title;
     private final HudLabel durationLabel;
     private HudLabel speedLabel;
+    private final NvLabel[] titles;
 
     private final String[] filePaths;
     private AudioRenderer[] renderers;
@@ -59,6 +60,7 @@ public class WavePlayer extends NvComp {
         this.mic = microphone;
         this.filePaths = new String[]{};
         this.maxDurationMs = 0;
+        this.titles = new NvLabel[0];
         this.title = new HudLabel(30, 30);
         this.durationLabel = new HudLabel(100,0);
         this.keyboardListener = listener;
@@ -82,12 +84,22 @@ public class WavePlayer extends NvComp {
             error = true;
             this.filePaths = new String[]{};
             this.maxDurationMs = 0;
+            this.titles = new NvLabel[0];
+
             this.title = new HudLabel(30, 30);
             this.durationLabel = new HudLabel(100,0);
             durationLabel.changeText("");
             mic = null;
             this.keyboardListener = keyboardListener;
             return;
+        }
+        this.titles = new NvLabel[filePaths.length];
+
+        for(int i = 0; i < titles.length; i++){
+            this.titles[i] = new NvLabel(-1000, i*70);
+            this.titles[i].changeText(i+1 + ". " + sanitize(filePaths[i], 40));
+            this.titles[i].setRgb(1,1,1);
+            addChild(this.titles[i]);
         }
 
         var samples = DecodeManager.decode(filePaths[0]);
@@ -101,16 +113,21 @@ public class WavePlayer extends NvComp {
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[0]);
         this.DISPLAY_SAMPLES = samples.length;
         this.title = new HudLabel(30, 30);
-        this.durationLabel = new HudLabel((int) (w/1.95f), 30);
+        this.durationLabel = new HudLabel(w, 30);
         durationLabel.changeText(getFormattedDuration());
         durationLabel.setRgb(1,1,1);
         title.setRgb(1,1,1);
         var p = filePaths[0];
-        title.changeText(p.substring(p.lastIndexOf("/")+1, p.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
+        title.changeText(sanitize(p, 50) + " | samples: " + DISPLAY_SAMPLES);
         addChild(title);
         addChild(durationLabel);
         this.mic = null;
         init();
+    }
+
+    private String sanitize(String p, int amount){
+        var sani = p.substring(p.lastIndexOf("/")+1, p.lastIndexOf("."));
+        return sani.length() > amount ? sani.substring(0, amount-3) + "..." : sani;
     }
 
     private String getFormattedDuration(){
@@ -153,7 +170,7 @@ public class WavePlayer extends NvComp {
         var p = filePaths[current];
         var newSamples = DecodeManager.decode(p);
         DISPLAY_SAMPLES = newSamples.length;
-        title.changeText(p.substring(p.lastIndexOf("/")+1, p.lastIndexOf(".")) + " | samples: " + DISPLAY_SAMPLES);
+        title.changeText(sanitize(p, 50) + " | samples: " + DISPLAY_SAMPLES);
         AudioManager.loadExternal(filePaths[current]);
         AudioManager.setVolumeExternal(filePaths[current], currentVolume);
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[current]);
@@ -169,13 +186,13 @@ public class WavePlayer extends NvComp {
     private int cX = 0;
 
     private int nextPosition(){
-        return cX += 100;
+        return cX += (int)(getW()*0.035f);
     }
 
     private float currentTime = 0;
 
     private void init(){
-        var size = 80;
+        var size = (int)(getW()*0.030f);
 
         renderers = new AudioRenderer[]{
                 new WaveRenderer(new Color(100,255,100), getH(), getW()),
@@ -220,7 +237,13 @@ public class WavePlayer extends NvComp {
             currentTime += 5000;
             AudioManager.skipExternal(filePaths[current], (int) currentTime);
         });
+        var reset = new PlayButton(nextPosition(), y,size,size, Color.DARK_GRAY,"R");
+        reset.setAction(() -> {
+            currentTime = 0;
+            AudioManager.skipExternal(filePaths[current], 0);
+        });
         nextPosition();
+        addChild(reset);
 
         NvLabel volume = new NvLabel(nextPosition(), y);
         volume.changeText("Vol: " + currentVolume);

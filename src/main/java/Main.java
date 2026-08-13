@@ -1,4 +1,5 @@
 import nv.core.ContextBuilder;
+import nv.core.ScreenSize;
 import nv.core.components.NvCont;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AppPathUtils;
@@ -23,7 +24,7 @@ void main() {
 
     var page = context.addAndSetPage("Main", NvCont.newPage());
     page.setBackground(0,0,0);
-    context.changeFont(new Font("monospaced", Font.PLAIN, 30));
+    context.changeFont(new Font("monospaced", Font.PLAIN, (int) (context.getRenderWidth()*0.01f)));
 
     int margin = 150;
 
