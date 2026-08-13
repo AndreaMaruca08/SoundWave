@@ -18,6 +18,7 @@ import static nv.core.errors.NvLogger.logErr;
 void main() {
     var context = new ContextBuilder("Sound wave")
             .setVsync(true)
+            .setIdleWhenUnfocused(true)
             .build();
 
     var page = context.addAndSetPage("Main", NvCont.newPage());

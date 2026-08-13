@@ -225,7 +225,7 @@ public class NvPixelGraphic extends NvGraphic {
     @Override
     public void drawRoundRect(float x, float y, float w, float h, float radius, float r, float g, float b, AppendableGeometry comp) {
         int segments = 8;
-        
+
         float x1 = tx(component.getX() + x);
         float y1 = ty(component.getY() + y);
         float x2 = tx(component.getX() + x + w);
@@ -237,12 +237,12 @@ public class NvPixelGraphic extends NvGraphic {
 
         int numVerts = 4 + 4 * (segments + 1);
         float[] verts = new float[numVerts * FLOATS_PER_VERTEX];
-        
+
         float[][] corners = {
-            {x1 + rScaled, y1 + rScaled}, // Top-Left
-            {x2 - rScaled, y1 + rScaled}, // Top-Right
-            {x2 - rScaled, y2 - rScaled}, // Bottom-Right
-            {x1 + rScaled, y2 - rScaled}  // Bottom-Left
+                {x1 + rScaled, y1 + rScaled}, // Top-Left
+                {x2 - rScaled, y1 + rScaled}, // Top-Right
+                {x2 - rScaled, y2 - rScaled}, // Bottom-Right
+                {x1 + rScaled, y2 - rScaled}  // Bottom-Left
         };
 
         int numIndices = 30 + 12 * segments;
@@ -250,12 +250,12 @@ public class NvPixelGraphic extends NvGraphic {
 
         int vIdx = 0;
         float[] inner = {
-            x1 + rScaled, y1 + rScaled,
-            x2 - rScaled, y1 + rScaled,
-            x2 - rScaled, y2 - rScaled,
-            x1 + rScaled, y2 - rScaled
+                x1 + rScaled, y1 + rScaled,
+                x2 - rScaled, y1 + rScaled,
+                x2 - rScaled, y2 - rScaled,
+                x1 + rScaled, y2 - rScaled
         };
-        
+
         for(int i=0; i<4; i++) {
             int off = vIdx * 8;
             verts[off] = inner[i*2];
@@ -288,7 +288,7 @@ public class NvPixelGraphic extends NvGraphic {
                 verts[off + 5] = wu;
                 verts[off + 6] = wv;
                 verts[off + 7] = a;
-                
+
                 if(s > 0) {
                     inds[iIdx++] = cornerCenterIdx;
                     inds[iIdx++] = vIdx - 1;
@@ -297,13 +297,13 @@ public class NvPixelGraphic extends NvGraphic {
                 vIdx++;
             }
         }
-        
+
         // Side rectangles
         int a0_end = 4 + segments;
         int a1_start = 4 + segments + 1;
         inds[iIdx++] = 0; inds[iIdx++] = 1; inds[iIdx++] = a1_start;
         inds[iIdx++] = a1_start; inds[iIdx++] = a0_end; inds[iIdx++] = 0;
-        
+
         int a1_end = 4 + 2*segments + 1;
         int a2_start = 4 + 2*segments + 2;
         inds[iIdx++] = 1; inds[iIdx++] = 2; inds[iIdx++] = a2_start;

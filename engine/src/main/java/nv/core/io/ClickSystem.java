@@ -44,6 +44,7 @@ public final class ClickSystem {
 
     public static GLFWMouseButtonCallbackI inputCallback(long window){
         return (_, button, action, mods) -> {
+            NvContext.notifyInputEvent();
             if (button == GLFW_MOUSE_BUTTON_LEFT) {
                 var correctedCoords = getMappedCoords(window);
                 handleMouseClick(correctedCoords[0], correctedCoords[1], action == GLFW_PRESS);
@@ -68,7 +69,7 @@ public final class ClickSystem {
         double physX = cx[0] * fbWidth[0]  / windowWidth[0];
         double physY = cy[0] * fbHeight[0] / windowHeight[0];
 
-        // Step 2: framebuffer fisico → spazio renderInternal target interna
+        // Step 2: framebuffer fisico → spazio render target interna
         NvContext ctx = NvContext.getInstance();
         float renderW = ctx.getRenderWidth();
         float renderH = ctx.getRenderHeight();

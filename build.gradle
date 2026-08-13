@@ -7,13 +7,13 @@ buildscript {
 }
 
 plugins {
-    id 'java'
+    id 'java-library'
     id 'application'
     id 'com.gradleup.shadow' version '9.0.0'
     id 'edu.sc.seis.launch4j' version '4.0.0'
 }
 
-group = 'soundWave'
+group = 'not specified'
 version = '1.2'
 
 project.ext.lwjglVersion = "3.4.1"
@@ -44,25 +44,9 @@ repositories {
 }
 
 dependencies {
-    //----Engine dependencies----
-    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
-
-    implementation "org.lwjgl:lwjgl"
-    implementation "org.lwjgl:lwjgl-glfw"
-    implementation "org.lwjgl:lwjgl-vulkan"
-
-    implementation "org.lwjgl:lwjgl-openal"
-    implementation "org.lwjgl:lwjgl-stb"
-
-    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
-    runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
-    runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
-    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+    implementation project(':engine')
 
     implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
-    implementation 'com.esotericsoftware:kryo:5.6.2'
-    //----End engine dependencies----
-
     implementation "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
     implementation "com.googlecode.soundlibs:jorbis:0.0.17.4"
     implementation "com.googlecode.soundlibs:tritonus-share:0.3.7.4"

@@ -53,7 +53,7 @@ public final class InternalRenderTarget implements AutoCloseable {
 
             LongBuffer pImage = stack.mallocLong(1);
             if (vkCreateImage(device, imageInfo, null, pImage) != VK_SUCCESS) {
-                throw new EngineEx("Unable to create internal renderInternal target image");
+                throw new EngineEx("Unable to create internal render target image");
             }
             this.imageHandle = pImage.get(0);
 
@@ -70,7 +70,7 @@ public final class InternalRenderTarget implements AutoCloseable {
 
             LongBuffer pMemory = stack.mallocLong(1);
             if (vkAllocateMemory(device, allocInfo, null, pMemory) != VK_SUCCESS) {
-                throw new EngineEx("Unable to allocate internal renderInternal target memory");
+                throw new EngineEx("Unable to allocate internal render target memory");
             }
             this.memoryHandle = pMemory.get(0);
             vkBindImageMemory(device, imageHandle, memoryHandle, 0);
@@ -89,7 +89,7 @@ public final class InternalRenderTarget implements AutoCloseable {
 
             LongBuffer pView = stack.mallocLong(1);
             if (vkCreateImageView(device, viewInfo, null, pView) != VK_SUCCESS) {
-                throw new EngineEx("Unable to create internal renderInternal target image view");
+                throw new EngineEx("Unable to create internal render target image view");
             }
             this.imageViewHandle = pView.get(0);
 
@@ -103,7 +103,7 @@ public final class InternalRenderTarget implements AutoCloseable {
 
             LongBuffer pFb = stack.mallocLong(1);
             if (vkCreateFramebuffer(device, fbInfo, null, pFb) != VK_SUCCESS) {
-                throw new EngineEx("Unable to create internal renderInternal target framebuffer");
+                throw new EngineEx("Unable to create internal render target framebuffer");
             }
             this.framebufferHandle = pFb.get(0);
         }

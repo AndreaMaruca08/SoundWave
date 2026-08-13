@@ -297,7 +297,7 @@ public final class AudioManager {
         } catch(Exception e) {
 
             logErr(
-                    "External audio decoding failed: "
+                    "External audio loading failed: "
                             + e.getMessage()
             );
 
@@ -435,6 +435,20 @@ public final class AudioManager {
 
         AL10.alSourcef(sourceId, AL11.AL_SEC_OFFSET, targetSec);
     }
+    /**
+     * Plays an audio
+     *
+     * @param filePath audio file
+     */
+    public static void play(String filePath) {
+        int sourceId = getOrCreateSource(PREFIX + filePath);
+
+        if (sourceId == -1) {
+            return;
+        }
+        AL10.alSourcePlay(sourceId);
+    }
+
 
     /**
      * Computes current playback progress (0-100) for the source/buffer at the given cache key.
@@ -636,7 +650,7 @@ public final class AudioManager {
             return bufferId;
 
         } catch (Exception e) {
-            logErr("OGG decoding failed: " + e.getMessage());
+            logErr("OGG loading failed: " + e.getMessage());
             if (fileBuffer != null) {
                 MemoryUtil.memFree(fileBuffer);
             }
@@ -682,7 +696,7 @@ public final class AudioManager {
                 }
             }
         } catch (Exception e) {
-            logErr("JavaSound decoding failed: " + e.getMessage());
+            logErr("JavaSound loading failed: " + e.getMessage());
             return -1;
         }
     }

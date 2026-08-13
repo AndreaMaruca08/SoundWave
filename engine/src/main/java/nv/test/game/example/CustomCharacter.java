@@ -30,7 +30,7 @@ public class CustomCharacter extends NvCharacter {
         hplabel.changeText("HP: " + hp);
         hplabel.setHUD(true);
 
-        // info display for decoding
+        // info display for loading
         var infos = new NvLabel(200,200);
         infos.setRgb(0.1f,0.1f,0.1f);
         infos.changeText("Press ESC to save and R to load from save");
@@ -57,7 +57,7 @@ public class CustomCharacter extends NvCharacter {
     @Override
     public void update(float dt) {
         super.update(dt);
-        // Example of saving and decoding
+        // Example of saving and loading
         if(keys[GLFW.GLFW_KEY_ESCAPE]){
             GameSaveManager.save(new GameSave(getX(),getY()));
         }else if(keys[GLFW.GLFW_KEY_R]){
