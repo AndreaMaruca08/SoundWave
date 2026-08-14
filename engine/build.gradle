@@ -3,9 +3,9 @@ plugins {
 }
 
 group = 'not specified'
-version = '1.2'
+version = '1.6'
 
-project.ext.lwjglVersion = "3.4.1"
+project.ext.lwjglVersion = "3.4.2"
 project.ext.currentOs = org.gradle.internal.os.OperatingSystem.current()
 
 project.ext.lwjglNatives = {
@@ -32,7 +32,6 @@ dependencies {
     api "org.lwjgl:lwjgl"
     api "org.lwjgl:lwjgl-glfw"
     api "org.lwjgl:lwjgl-vulkan"
-
     api "org.lwjgl:lwjgl-openal"
     api "org.lwjgl:lwjgl-stb"
 
@@ -43,4 +42,27 @@ dependencies {
 
     implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.4'
     implementation 'com.esotericsoftware:kryo:5.6.2'
+
+    implementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    implementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    implementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.main.output.classesDirs + sourceSets.test.output.classesDirs
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
+
+    systemProperty 'java.awt.headless', 'true'
+    outputs.upToDateWhen { false }
+
+    testLogging {
+        events "passed", "failed", "skipped"
+        exceptionFormat "full"
+        showCauses true
+        showExceptions true
+        showStackTraces true
+    }
 }
