@@ -2,6 +2,7 @@ package nv.core;
 
 import nv.core.annotations.EngineCore;
 import nv.core.assets.AssetsManager;
+import nv.core.camera.NvCamera;
 import nv.core.collision.CollisionManager;
 import nv.core.components.NvComp;
 import nv.core.components.NvCont;
@@ -37,6 +38,10 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.KHRGetPhysicalDeviceProperties2.*;
+import static org.lwjgl.vulkan.VK12.*;
+
+import static org.lwjgl.vulkan.EXTDescriptorIndexing.*;
 
 /**
  * <h3>Entry point for the NV2D game engine</h3>
@@ -70,8 +75,8 @@ public final class NvContext implements Runnable {
     private final int MAX_VERTICES;
     private final int MAX_INDICES;
 
-    private static final int DEF_MAX_VERTICES = 500_000;
-    private static final int DEF_MAX_INDICES  = 850_000;
+    private static final int DEF_MAX_VERTICES = 1_000_000;
+    private static final int DEF_MAX_INDICES  = 1_300_000;
 
     private static final int MAX_TEXTURES = 15;
     private final NvImage[] loadedTextures = new NvImage[MAX_TEXTURES];
@@ -125,6 +130,7 @@ public final class NvContext implements Runnable {
 
     private static final int PARALLEL_UPDATE_THRESHOLD = 4;
     private final List<UpdateCycle> updatable = new CopyOnWriteArrayList<>();
+    private final List<Drawable> drawables = new CopyOnWriteArrayList<>();
 
     public static NvCont rootComponent;
 
@@ -404,11 +410,37 @@ public final class NvContext implements Runnable {
     private NvContext(String name, Dimension windowDimension) {
         this(name, DEF_MAX_VERTICES, DEF_MAX_INDICES, windowDimension);
     }
+
+    /**
+     * Adds an updatable object to the context.
+     * @param updateCycle
+     */
     public void addUpdatable(UpdateCycle updateCycle){
         updatable.add(updateCycle);
     }
+
+    /**
+     * Removes an updatable object from the context.
+     * @param updateCycle
+     */
     public void removeUpdatable(UpdateCycle updateCycle){
         updatable.remove(updateCycle);
+    }
+
+    /**
+     * Adds a drawable object to the context.
+     * @param drawable
+     */
+    public void addDrawable(Drawable drawable){
+        drawables.add(drawable);
+    }
+
+    /**
+     * Removes a drawable object from the context.
+     * @param drawable
+     */
+    public void removeDrawable(Drawable drawable){
+        drawables.remove(drawable);
     }
 
     /**
@@ -480,7 +512,7 @@ public final class NvContext implements Runnable {
         }
     };
 
-    /** Updated in 1.6. */
+    /** Updated in 1.6.2 */
     private void rebuildScene() {
         final float w = getEffectiveRenderWidth();
         final float h = getEffectiveRenderHeight();
@@ -491,7 +523,9 @@ public final class NvContext implements Runnable {
 
         CollisionManager.handleCollisions();
 
-        rootComponent.draw(graphic);
+        rootComponent.drawAllComponents(graphic);
+        for(Drawable drawable : drawables)
+            drawable.draw(graphic);
 
         if(showFPS)
             fpsDisplay.draw(graphic);
@@ -514,7 +548,7 @@ public final class NvContext implements Runnable {
 
         dynamicVertexBuffer.update(combinedVertices, combinedVertexFloatCount);
         dynamicIndexBuffer.update(combinedIndices, combinedIndexCount);
-        sceneDirty = false; // Reset sceneDirty after rebuilding
+        sceneDirty = false;
     }
 
     private void ensureCombinedVertexCapacity(int requiredFloatCount) {
@@ -629,6 +663,9 @@ public final class NvContext implements Runnable {
         KeyboardSystem.focused = focused;
     }
 
+    public void setCamera(NvCamera camera){
+        NvGraphic.setCurrentCamera(camera);
+    }
 
     private void initVulkan() {
         createInstance();
@@ -661,7 +698,7 @@ public final class NvContext implements Runnable {
         );
         logEngine("Font texture created");
 
-        int imageCount = swapchain.getImageCount(); // usa il conteggio reale
+        int imageCount = swapchain.getImageCount();
         this.ubo               = new OrthoUBO(device, physicalDevice, imageCount);
         this.descriptorManager = new DescriptorManager(device, ubo, fontTexture, imageCount);
 
@@ -733,7 +770,7 @@ public final class NvContext implements Runnable {
 
     private void tickHandler(float dt) {
         currentCameraUpdateCycle.update(dt);
-        rootComponent.tick(dt);
+        rootComponent.tickAllComponents(dt);
         runUpdatablesParallel(dt);
         if (mouseMoved) {
             HoverSystem.handleHover(window, rootComponent);
@@ -1059,27 +1096,176 @@ public final class NvContext implements Runnable {
 
     private void createInstance() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
+
             VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
                     .pApplicationName(stack.UTF8(ENGINE_NAME))
-                    .applicationVersion(VK_MAKE_VERSION(MAJOR_VERSION, MINOR_VERSION, PATCH))
+                    .applicationVersion(
+                            VK_MAKE_VERSION(
+                                    MAJOR_VERSION,
+                                    MINOR_VERSION,
+                                    PATCH
+                            )
+                    )
                     .pEngineName(stack.UTF8(ENGINE_NAME))
-                    .engineVersion(VK_MAKE_VERSION(MAJOR_VERSION, MINOR_VERSION, PATCH))
+                    .engineVersion(
+                            VK_MAKE_VERSION(
+                                    MAJOR_VERSION,
+                                    MINOR_VERSION,
+                                    PATCH
+                            )
+                    )
                     .apiVersion(VK_API_VERSION_1_0);
 
-            PointerBuffer glfwExtensions = GLFWVulkan.glfwGetRequiredInstanceExtensions();
-            if (glfwExtensions == null) throw new EngineEx("Estensioni Vulkan GLFW non trovate.");
+            // ---------------------------------------------------------
+            // GLFW instance extensions
+            // ---------------------------------------------------------
 
-            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
-                    .pApplicationInfo(appInfo)
-                    .ppEnabledExtensionNames(glfwExtensions);
+            PointerBuffer glfwExtensions =
+                    GLFWVulkan.glfwGetRequiredInstanceExtensions();
 
-            PointerBuffer pInstance = stack.mallocPointer(1);
-            if (vkCreateInstance(createInfo, null, pInstance) != VK_SUCCESS) {
-                throw new EngineEx("Impossibile creare l'istanza Vulkan.");
+            if (glfwExtensions == null) {
+                throw new EngineEx(
+                        "Estensioni Vulkan GLFW non trovate."
+                );
             }
-            this.instance = new VkInstance(pInstance.get(0), createInfo);
+
+            // ---------------------------------------------------------
+            // Enumerate available instance extensions
+            // ---------------------------------------------------------
+
+            IntBuffer extensionCount =
+                    stack.mallocInt(1);
+
+            if (vkEnumerateInstanceExtensionProperties(
+                    (String) null,
+                    extensionCount,
+                    null
+            ) != VK_SUCCESS) {
+                throw new EngineEx(
+                        "Impossibile enumerare le instance extensions Vulkan."
+                );
+            }
+
+            VkExtensionProperties.Buffer availableExtensions =
+                    VkExtensionProperties.malloc(
+                            extensionCount.get(0)
+                    );
+
+            if (vkEnumerateInstanceExtensionProperties(
+                    (String) null,
+                    extensionCount.rewind(),
+                    availableExtensions
+            ) != VK_SUCCESS) {
+                throw new EngineEx(
+                        "Impossibile leggere le instance extensions Vulkan."
+                );
+            }
+
+            boolean hasProperties2 = false;
+
+            for (VkExtensionProperties extension :
+                    availableExtensions) {
+
+                String name = extension.extensionNameString();
+
+                if (name.equals(
+                        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
+                )) {
+                    hasProperties2 = true;
+                    break;
+                }
+            }
+
+            System.out.println(
+                    "Available VK_KHR_get_physical_device_properties2 = "
+                            + hasProperties2
+            );
+
+            if (!hasProperties2) {
+                throw new EngineEx(
+                        "La implementazione Vulkan non espone " +
+                                "VK_KHR_get_physical_device_properties2."
+                );
+            }
+
+            // ---------------------------------------------------------
+            // Build enabled extension list
+            // ---------------------------------------------------------
+
+            int glfwExtensionCount =
+                    glfwExtensions.remaining();
+
+            PointerBuffer enabledExtensions =
+                    stack.mallocPointer(
+                            glfwExtensionCount + 1
+                    );
+
+            for (int i = 0; i < glfwExtensionCount; i++) {
+                enabledExtensions.put(
+                        glfwExtensions.get(i)
+                );
+            }
+
+            enabledExtensions.put(
+                    stack.UTF8(
+                            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
+                    )
+            );
+
+            enabledExtensions.flip();
+
+            // ---------------------------------------------------------
+            // Create instance
+            // ---------------------------------------------------------
+
+            VkInstanceCreateInfo createInfo =
+                    VkInstanceCreateInfo.calloc(stack)
+                            .sType(
+                                    VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
+                            )
+                            .pApplicationInfo(appInfo)
+                            .ppEnabledExtensionNames(
+                                    enabledExtensions
+                            );
+
+            PointerBuffer pInstance =
+                    stack.mallocPointer(1);
+
+            int result = vkCreateInstance(
+                    createInfo,
+                    null,
+                    pInstance
+            );
+
+            if (result != VK_SUCCESS) {
+                throw new EngineEx(
+                        "Impossibile creare l'istanza Vulkan. VkResult="
+                                + result
+                );
+            }
+
+            this.instance =
+                    new VkInstance(
+                            pInstance.get(0),
+                            createInfo
+                    );
+
+            // ---------------------------------------------------------
+            // Verify LWJGL actually loaded the extension
+            // ---------------------------------------------------------
+
+            System.out.println(
+                    "Enabled VK_KHR_get_physical_device_properties2 = "
+                            + instance.getCapabilities()
+                            .VK_KHR_get_physical_device_properties2
+            );
+
+            System.out.println(
+                    "vkGetPhysicalDeviceFeatures2KHR pointer = "
+                            + instance.getCapabilities()
+                            .vkGetPhysicalDeviceFeatures2KHR
+            );
         }
     }
 
@@ -1095,69 +1281,265 @@ public final class NvContext implements Runnable {
 
     private void pickPhysicalDeviceAndCreateLogicalDevice() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
+
+            // ---------------------------------------------------------
+            // 1. Enumerate physical devices
+            // ---------------------------------------------------------
+
             IntBuffer pDeviceCount = stack.mallocInt(1);
-            vkEnumeratePhysicalDevices(instance, pDeviceCount, null);
-            if (pDeviceCount.get(0) == 0) throw new EngineEx("Nessuna GPU Vulkan trovata.");
 
-            PointerBuffer pPhysicalDevices = stack.mallocPointer(pDeviceCount.get(0));
-            vkEnumeratePhysicalDevices(instance, pDeviceCount, pPhysicalDevices);
-            this.physicalDevice = new VkPhysicalDevice(pPhysicalDevices.get(0), instance);
+            if (vkEnumeratePhysicalDevices(
+                    instance,
+                    pDeviceCount,
+                    null
+            ) != VK_SUCCESS) {
+                throw new EngineEx("Impossibile enumerare le GPU Vulkan.");
+            }
 
-            IntBuffer pQueueFamilyCount = stack.mallocInt(1);
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyCount, null);
+            if (pDeviceCount.get(0) == 0) {
+                throw new EngineEx("Nessuna GPU Vulkan trovata.");
+            }
+
+            PointerBuffer pPhysicalDevices =
+                    stack.mallocPointer(pDeviceCount.get(0));
+
+            if (vkEnumeratePhysicalDevices(
+                    instance,
+                    pDeviceCount,
+                    pPhysicalDevices
+            ) != VK_SUCCESS) {
+                throw new EngineEx("Impossibile ottenere le GPU Vulkan.");
+            }
+
+            this.physicalDevice =
+                    new VkPhysicalDevice(
+                            pPhysicalDevices.get(0),
+                            instance
+                    );
+
+            // ---------------------------------------------------------
+            // 2. Queue family
+            // ---------------------------------------------------------
+
+            IntBuffer pQueueFamilyCount =
+                    stack.mallocInt(1);
+
+            vkGetPhysicalDeviceQueueFamilyProperties(
+                    physicalDevice,
+                    pQueueFamilyCount,
+                    null
+            );
+
             VkQueueFamilyProperties.Buffer queueFamilies =
-                    VkQueueFamilyProperties.calloc(pQueueFamilyCount.get(0), stack);
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyCount, queueFamilies);
+                    VkQueueFamilyProperties.calloc(
+                            pQueueFamilyCount.get(0),
+                            stack
+                    );
+
+            vkGetPhysicalDeviceQueueFamilyProperties(
+                    physicalDevice,
+                    pQueueFamilyCount,
+                    queueFamilies
+            );
 
             int graphicsQFI = -1;
+
             for (int i = 0; i < queueFamilies.capacity(); i++) {
-                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
+
+                if ((queueFamilies.get(i).queueFlags()
+                        & VK_QUEUE_GRAPHICS_BIT) != 0) {
+
                     graphicsQFI = i;
                     break;
                 }
             }
-            if (graphicsQFI == -1) throw new EngineEx("Nessuna queue grafica trovata.");
-            VkDeviceQueueCreateInfo.Buffer queueCreateInfo = VkDeviceQueueCreateInfo.calloc(1, stack)
-                    .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
-                    .queueFamilyIndex(graphicsQFI)
-                    .pQueuePriorities(stack.floats(1.0f));
+
+            if (graphicsQFI == -1) {
+                throw new EngineEx("Nessuna queue grafica trovata.");
+            }
+
+            VkDeviceQueueCreateInfo.Buffer queueCreateInfo =
+                    VkDeviceQueueCreateInfo.calloc(1, stack)
+                            .sType(
+                                    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO
+                            )
+                            .queueFamilyIndex(graphicsQFI)
+                            .pQueuePriorities(
+                                    stack.floats(1.0f)
+                            );
+
+            // ---------------------------------------------------------
+            // 3. Enumerate device extensions
+            // ---------------------------------------------------------
 
             IntBuffer extCount = stack.mallocInt(1);
-            vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extCount, null);
-            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extCount.get(0));
-            vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extCount.rewind(), availableExtensions);
+
+            vkEnumerateDeviceExtensionProperties(
+                    physicalDevice,
+                    (String) null,
+                    extCount,
+                    null
+            );
+
+            VkExtensionProperties.Buffer availableExtensions =
+                    VkExtensionProperties.malloc(
+                            extCount.get(0)
+                    );
+
+            vkEnumerateDeviceExtensionProperties(
+                    physicalDevice,
+                    (String) null,
+                    extCount.rewind(),
+                    availableExtensions
+            );
 
             boolean hasPortabilitySubset = false;
+            boolean hasDescriptorIndexing = false;
+
             for (VkExtensionProperties ext : availableExtensions) {
-                if (ext.extensionNameString().equals("VK_KHR_portability_subset")) {
+
+                String name = ext.extensionNameString();
+
+                if (name.equals("VK_KHR_portability_subset")) {
                     hasPortabilitySubset = true;
-                    break;
+                }
+
+                if (name.equals("VK_EXT_descriptor_indexing")) {
+                    hasDescriptorIndexing = true;
                 }
             }
 
-            PointerBuffer deviceExtensions = stack.mallocPointer(hasPortabilitySubset ? 2 : 1);
-            deviceExtensions.put(stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
-            if (hasPortabilitySubset) {
-                deviceExtensions.put(stack.UTF8("VK_KHR_portability_subset"));
+            // ---------------------------------------------------------
+            // 4. Descriptor indexing is required by NV2D
+            // ---------------------------------------------------------
+
+            if (!hasDescriptorIndexing) {
+                throw new EngineEx(
+                        "La GPU non espone VK_EXT_descriptor_indexing. " +
+                                "NV2D richiede il non-uniform indexing delle texture."
+                );
             }
+
+            // ---------------------------------------------------------
+            // 5. Device extensions
+            // ---------------------------------------------------------
+
+            int extensionCount =
+                    hasPortabilitySubset ? 3 : 2;
+
+            PointerBuffer deviceExtensions =
+                    stack.mallocPointer(extensionCount);
+
+            deviceExtensions.put(
+                    stack.UTF8(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+            );
+
+            deviceExtensions.put(
+                    stack.UTF8("VK_EXT_descriptor_indexing")
+            );
+
+            if (hasPortabilitySubset) {
+                deviceExtensions.put(
+                        stack.UTF8("VK_KHR_portability_subset")
+                );
+            }
+
             deviceExtensions.flip();
+
+            // ---------------------------------------------------------
+            // 6. Query descriptor indexing feature
+            // ---------------------------------------------------------
+
+            VkPhysicalDeviceDescriptorIndexingFeaturesEXT supportedFeatures =
+                    VkPhysicalDeviceDescriptorIndexingFeaturesEXT.calloc(stack)
+                            .sType(
+                                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT
+                            );
+
+            VkPhysicalDeviceFeatures2 features2 =
+                    VkPhysicalDeviceFeatures2.calloc(stack)
+                            .sType(
+                                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2
+                            )
+                            .pNext(
+                                    supportedFeatures.address()
+                            );
+
+            vkGetPhysicalDeviceFeatures2KHR(
+                    physicalDevice,
+                    features2
+            );
+
+            if (!supportedFeatures.shaderSampledImageArrayNonUniformIndexing()) {
+                throw new EngineEx(
+                        "La GPU espone VK_EXT_descriptor_indexing ma " +
+                                "non supporta shaderSampledImageArrayNonUniformIndexing."
+                );
+            }
+
+            // ---------------------------------------------------------
+            // 7. Enable required descriptor indexing feature
+            // ---------------------------------------------------------
+
+            VkPhysicalDeviceDescriptorIndexingFeaturesEXT enabledFeatures =
+                    VkPhysicalDeviceDescriptorIndexingFeaturesEXT.calloc(stack)
+                            .sType(
+                                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT
+                            )
+                            .shaderSampledImageArrayNonUniformIndexing(true);
+
+            // ---------------------------------------------------------
+            // 8. Device creation
+            // ---------------------------------------------------------
+
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
                     .pQueueCreateInfos(queueCreateInfo)
                     .ppEnabledExtensionNames(deviceExtensions);
 
-            PointerBuffer pDevice = stack.mallocPointer(1);
-            if (vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
-                throw new EngineEx("Impossibile creare il Logical Device.");
-            }
-            this.device = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
+            PointerBuffer pDevice =
+                    stack.mallocPointer(1);
 
-            PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(device, graphicsQFI, 0, pQueue);
-            this.graphicsQueue = new VkQueue(pQueue.get(0), device);
+            if (vkCreateDevice(
+                    physicalDevice,
+                    createInfo,
+                    null,
+                    pDevice
+            ) != VK_SUCCESS) {
+
+                throw new EngineEx(
+                        "Impossibile creare il Logical Device."
+                );
+            }
+
+            this.device =
+                    new VkDevice(
+                            pDevice.get(0),
+                            physicalDevice,
+                            createInfo
+                    );
+
+            // ---------------------------------------------------------
+            // 9. Graphics queue
+            // ---------------------------------------------------------
+
+            PointerBuffer pQueue =
+                    stack.mallocPointer(1);
+
+            vkGetDeviceQueue(
+                    device,
+                    graphicsQFI,
+                    0,
+                    pQueue
+            );
+
+            this.graphicsQueue =
+                    new VkQueue(
+                            pQueue.get(0),
+                            device
+                    );
         }
     }
-
     /** Updated in 1.6. */
     private void createRenderPass() {
         try (MemoryStack stack = MemoryStack.stackPush()) {

@@ -205,11 +205,8 @@ public class GameView extends AudioRenderer implements KeyboardListener {
                               float green,
                               float b) {
 
-        float left = x - radius;
-        float top = y - radius;
-
-        g.drawOval(left, top, radius * 2, 64, r, green, b);
-        g.drawOval(left + 1, top + 13, (radius - 1) * 2, 64, 0, 0, 0);
+        g.drawOval(x,y, radius * 2, 64, r, green, b);
+        g.drawOval(x, y, (radius - 1) * 2, 64, 0, 0, 0);
     }
 
     @Override

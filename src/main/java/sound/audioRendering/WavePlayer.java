@@ -93,6 +93,8 @@ public class WavePlayer extends NvComp {
             this.keyboardListener = keyboardListener;
             return;
         }
+        NvContext.getInstance().getCurrentPage().addChild(this);
+
         this.titles = new NvLabel[filePaths.length];
 
         for(int i = 0; i < titles.length; i++){
@@ -203,6 +205,7 @@ public class WavePlayer extends NvComp {
                 new GameView()
         };
 
+        renderers[currentRenderer].reload(waveBuffer);
         AtomicBoolean paused = new AtomicBoolean(true);
         var pause = new PlayButton(nextPosition(), (int) (getH()*0.9f),size,size, Color.DARK_GRAY," ||");
         pause.setAction(() -> {
@@ -371,6 +374,7 @@ public class WavePlayer extends NvComp {
             g.drawText("Error: empty directory /audio_files, use .wav .mp3 .ogg", 150,500);
             return;
         }
+
 
         renderers[currentRenderer].render(g, waveBuffer, getW(), getH()*0.8f, currentTime);
     }

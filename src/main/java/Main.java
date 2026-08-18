@@ -23,7 +23,7 @@ void main() {
             .build();
 
     var page = context.addAndSetPage("Main", NvCont.newPage());
-    page.setBackground(0,0,0);
+    page.setBackgroundColor(0,0,0);
     context.changeFont(new Font("monospaced", Font.PLAIN, (int) (context.getRenderWidth()*0.01f)));
 
     int margin = 150;
@@ -44,9 +44,8 @@ void main() {
             getAudioPaths().toArray(new String[0]),
             camera
     );
-
     page.addChild(display);
-    page.addChild(camera);
+
 
     context.run();
 }
