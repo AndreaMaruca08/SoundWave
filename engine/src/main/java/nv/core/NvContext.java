@@ -117,7 +117,7 @@ public final class NvContext implements Runnable {
     static {
         Dimension s;
         try {
-            s = java.awt.GraphicsEnvironment.isHeadless()
+            s = GraphicsEnvironment.isHeadless()
                     ? new Dimension(1920, 1080)
                     : Toolkit.getDefaultToolkit().getScreenSize();
         } catch (Throwable e) {
@@ -1177,11 +1177,6 @@ public final class NvContext implements Runnable {
                 }
             }
 
-            System.out.println(
-                    "Available VK_KHR_get_physical_device_properties2 = "
-                            + hasProperties2
-            );
-
             if (!hasProperties2) {
                 throw new EngineEx(
                         "La implementazione Vulkan non espone " +
@@ -1251,21 +1246,6 @@ public final class NvContext implements Runnable {
                             createInfo
                     );
 
-            // ---------------------------------------------------------
-            // Verify LWJGL actually loaded the extension
-            // ---------------------------------------------------------
-
-            System.out.println(
-                    "Enabled VK_KHR_get_physical_device_properties2 = "
-                            + instance.getCapabilities()
-                            .VK_KHR_get_physical_device_properties2
-            );
-
-            System.out.println(
-                    "vkGetPhysicalDeviceFeatures2KHR pointer = "
-                            + instance.getCapabilities()
-                            .vkGetPhysicalDeviceFeatures2KHR
-            );
         }
     }
 
