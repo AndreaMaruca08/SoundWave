@@ -141,11 +141,12 @@ public class NebulaRenderer extends AudioRenderer {
 
     private void drawParticles(NvGraphic g){
 
+        g.beginBatch();
         for(Particle p:particles){
 
             float glow=p.size*3+energy*8;
 
-            g.drawOval(
+            g.batchDrawOval(
                     p.x,
                     p.y,
                     glow,
@@ -155,7 +156,7 @@ public class NebulaRenderer extends AudioRenderer {
                     0.5f
             );
 
-            g.drawOval(
+            g.batchDrawOval(
                     p.x,
                     p.y,
                     p.size+energy*2,
@@ -165,5 +166,6 @@ public class NebulaRenderer extends AudioRenderer {
                     1f
             );
         }
+        g.endBatch();
     }
 }

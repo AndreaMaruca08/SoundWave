@@ -111,11 +111,12 @@ public class StarRendering extends AudioRenderer {
 
     private void drawStars(NvGraphic g) {
 
+        g.beginBatch();
         for(Star s : stars) {
             float size = s.radius + s.energy * 8;
             float brightness = Math.min(1, 0.5f + s.energy);
 
-            g.drawOval(
+            g.batchDrawOval(
                     s.x,
                     s.y,
                     size,
@@ -125,6 +126,7 @@ public class StarRendering extends AudioRenderer {
                     brightness
             );
         }
+        g.endBatch();
     }
     private void drawConnections(NvGraphic g) {
 

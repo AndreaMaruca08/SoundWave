@@ -99,6 +99,7 @@ public class WavePlayer extends NvComp {
 
         for(int i = 0; i < titles.length; i++){
             this.titles[i] = new NvLabel(-1000, i*70);
+            this.titles[i].setW(1000);
             this.titles[i].changeText(i+1 + ". " + sanitize(filePaths[i], 40));
             this.titles[i].setRgb(1,1,1);
             addChild(this.titles[i]);

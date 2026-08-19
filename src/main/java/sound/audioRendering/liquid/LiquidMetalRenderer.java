@@ -10,12 +10,10 @@ public class LiquidMetalRenderer extends AudioRenderer {
     private float time=0;
     private float energy=0;
 
-    private boolean going=false;
-
     private int lastPeak=-1;
 
-    private float[] px=new float[POINTS];
-    private float[] py=new float[POINTS];
+    private final float[] px=new float[POINTS];
+    private final float[] py=new float[POINTS];
 
     private float baseRadius=400;
 
@@ -60,7 +58,7 @@ public class LiquidMetalRenderer extends AudioRenderer {
     }
 
     private void drawShape(NvGraphic g){
-
+        g.beginBatch();
         for(int i=0;i<POINTS;i++){
 
             int next=i+1;
@@ -68,7 +66,7 @@ public class LiquidMetalRenderer extends AudioRenderer {
             if(next>=POINTS)
                 next=0;
 
-            g.drawLine(
+            g.batchDrawLine(
                     px[i],
                     py[i],
                     px[next],
@@ -79,5 +77,6 @@ public class LiquidMetalRenderer extends AudioRenderer {
                     1f
             );
         }
+        g.endBatch();
     }
 }
