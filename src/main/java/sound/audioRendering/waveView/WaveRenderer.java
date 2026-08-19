@@ -91,17 +91,14 @@ public class WaveRenderer extends AudioRenderer implements LineUser {
         float center = height / 2f;
         float halfHeight = height / 2f;
 
+        g.beginBatch();
         for (int x = 0; x < minPeaks.length; x++) {
 
-            float y1 =
-                    center +
-                            (minPeaks[x] / 32768f) * halfHeight;
+            float y1 = center + (minPeaks[x] / 32768f) * halfHeight;
 
-            float y2 =
-                    center +
-                            (maxPeaks[x] / 32768f) * halfHeight;
+            float y2 = center + (maxPeaks[x] / 32768f) * halfHeight;
 
-            g.drawLine(
+            g.batchDrawLine(
                     x,
                     y1,
                     x,
@@ -112,6 +109,7 @@ public class WaveRenderer extends AudioRenderer implements LineUser {
                     blue
             );
         }
+        g.endBatch();
 
         g.drawLine(
                 lineX1,
