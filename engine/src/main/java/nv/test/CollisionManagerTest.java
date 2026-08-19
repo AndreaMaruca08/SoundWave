@@ -1,7 +1,6 @@
 package nv.test;
 
 import nv.core.collision.CollisionManager;
-import nv.core.collision.CollisionSystem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
