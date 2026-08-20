@@ -1,9 +1,7 @@
 import nv.core.ContextBuilder;
-import nv.core.ScreenSize;
 import nv.core.components.NvCont;
-import nv.core.graphic.NvGraphic;
 import nv.core.io.AppPathUtils;
-import sound.MovingCamera;
+import nv.utils.camera.NvControlledCamera;
 import sound.audioRendering.WavePlayer;
 
 import java.awt.*;
@@ -31,13 +29,8 @@ void main() {
     var w = (int) context.getRenderWidth();
     var h = (int) context.getRenderHeight();
 
-    MovingCamera camera = new MovingCamera((int) (w/2.15f), (int) (h/2.30f));
-    camera.setNeedCamera(true);
-    context.setCurrentCameraUpdateCycle(camera);
-
-    NvGraphic.setCurrentCamera(camera.getCamera());
-    context.setKeyboardFocus(camera);
-
+    var camera = new NvControlledCamera((int) (w/2.15f), (int) (h/2.30f), 1000);
+    camera.minZoom = 1f;
     WavePlayer display = new WavePlayer(
             margin, 0,
             w - margin*3, h,

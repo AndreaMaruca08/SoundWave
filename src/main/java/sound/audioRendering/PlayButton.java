@@ -33,10 +33,10 @@ public class PlayButton extends NvRgbComp implements Clickable {
     }
 
     @Override
-    public void onClick() {}
+    public void onClick(int x, int y) {}
 
     @Override
-    public void onClickRelease() {
+    public void onClickRelease(int x, int y) {
         action.run();
     }
 

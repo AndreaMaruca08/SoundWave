@@ -3,7 +3,7 @@ package nv.core.components;
 import nv.core.AppendableGeometry;
 import nv.core.Drawable;
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
+import nv.core.Updatable;
 import nv.core.annotations.EngineCore;
 import nv.core.collision.Collidable;
 import nv.core.collision.CollisionManager;
@@ -18,6 +18,7 @@ import nv.core.io.Hoverable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nv.core.errors.NvLogger.logInfo;
 import static nv.core.graphic.NvGraphic.camera;
 
 /**
@@ -29,7 +30,7 @@ import static nv.core.graphic.NvGraphic.camera;
  */
 @EngineCore
 @SuppressWarnings("unused")
-public abstract class NvComp implements UpdateCycle, Drawable {
+public abstract class NvComp implements Updatable, Drawable {
     private NvComp parent;
     private final List<NvComp> children;
     private List<NvComp> rootComponentList;
@@ -39,6 +40,8 @@ public abstract class NvComp implements UpdateCycle, Drawable {
     public float rotation = 0;
     public float pivotX = 0.5f;
     public float pivotY = 0.5f;
+    protected int hoveredX = -1;
+    protected int hoveredY = -1;
     protected int weight = CollisionSystem.NO_WEIGHT;
     public boolean border = false;
     protected boolean isHUD = false;
@@ -288,6 +291,8 @@ public abstract class NvComp implements UpdateCycle, Drawable {
             }
             return;
         }
+        this.hoveredX = mouseX;
+        this.hoveredY = mouseY;
         for(NvComp child : children)
             child.handleHover(mouseX, mouseY);
         if (!isHovered) {
@@ -325,13 +330,39 @@ public abstract class NvComp implements UpdateCycle, Drawable {
         cleanDirty();
     }
 
-    public boolean isInside(int x, int y){
-        float shiftedX = camera.x + x;
-        float shiftedY = camera.y + y;
-        return  shiftedX >= this.x &&
-                shiftedX <= this.x + this.w &&
-                shiftedY >= this.y &&
-                shiftedY <= this.y + this.h;
+    public boolean isInside(int x, int y) {
+        float worldX;
+        float worldY;
+
+        if (isHUD()) {
+            worldX = x;
+            worldY = y;
+        } else {
+            float safeZoom = Math.max(camera.zoom, 0.0001f);
+            worldX = camera.x + (x / safeZoom);
+            worldY = camera.y + (y / safeZoom);
+        }
+
+        //handles rotation
+        if (rotation != 0) {
+            float pivotWorldX = this.x + this.w * this.pivotX;
+            float pivotWorldY = this.y + this.h * this.pivotY;
+
+            float rad = (float) Math.toRadians(-rotation);
+            float cos = (float) Math.cos(rad);
+            float sin = (float) Math.sin(rad);
+
+            float dx = worldX - pivotWorldX;
+            float dy = worldY - pivotWorldY;
+
+            worldX = pivotWorldX + (dx * cos - dy * sin);
+            worldY = pivotWorldY + (dx * sin + dy * cos);
+        }
+
+        return worldX >= this.x &&
+                worldX <= this.x + this.w &&
+                worldY >= this.y &&
+                worldY <= this.y + this.h;
     }
 
     public abstract void drawIntern(NvGraphic g);

@@ -6,7 +6,7 @@ import nv.core.graphic.NvGraphic;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("NvRgbComp and NvCont Unit Tests")
 public class NvRgbCompTest {

@@ -1,7 +1,7 @@
 package nv.utils.camera;
 
 import nv.core.NvContext;
-import nv.core.UpdateCycle;
+import nv.core.Updatable;
 import nv.core.annotations.ReadyComponent;
 import nv.core.camera.NvCamera;
 import nv.core.graphic.NvGraphic;
@@ -18,13 +18,17 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
  */
 @ReadyComponent
 @SuppressWarnings("unused")
-public class NvControlledCamera extends NvCamera implements UpdateCycle, KeyboardListener {
+public class NvControlledCamera extends NvCamera implements Updatable, KeyboardListener {
     protected int upKey =    GLFW_KEY_W;
     protected int leftKey =  GLFW_KEY_A;
     protected int downKey =  GLFW_KEY_S;
     protected int rightKey = GLFW_KEY_D;
 
     private float velocity;
+
+    public float zoomTick = 0.05f;
+    public float minZoom = 0.5f;
+    public float maxZoom = Float.POSITIVE_INFINITY;
 
     protected boolean[] keys = new boolean[GLFW_KEY_LAST];
 
@@ -121,13 +125,14 @@ public class NvControlledCamera extends NvCamera implements UpdateCycle, Keyboar
         if (hasMoved){
             x += movX;
             y += movY;
+
             setXY(x, y);
         }
         if(keys[GLFW_KEY_Z]){
-            zoomOnCenter(0.05f, 1f, Float.POSITIVE_INFINITY);
+            zoomOnCenter(zoomTick, minZoom, maxZoom);
             NvContext.markSceneDirty();
         }else if(keys[GLFW_KEY_X]){
-            zoomOnCenter(-0.05f, 1f, Float.POSITIVE_INFINITY);
+            zoomOnCenter(-zoomTick, minZoom, maxZoom);
             NvContext.markSceneDirty();
         }
     }
