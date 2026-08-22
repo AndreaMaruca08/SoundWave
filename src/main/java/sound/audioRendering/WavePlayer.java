@@ -8,12 +8,15 @@ import nv.core.io.KeyboardListener;
 import nv.utils.shapes.dynamic.NvLabel;
 import sound.Microphone;
 import sound.audioRendering.constellation.StarRendering;
+import sound.audioRendering.galaxy.GalaxyRendering;
 import sound.audioRendering.game.GameView;
 import sound.audioRendering.liquid.LiquidMetalRenderer;
 import sound.audioRendering.nebula.NebulaRenderer;
 import sound.audioRendering.pond.PondRendering;
+import sound.audioRendering.reactor.ReactorRendering;
 import sound.audioRendering.waveView.WaveRenderer;
 import sound.decoding.DecodeManager;
+import sound.tesla.TeslaRendering;
 
 import java.awt.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -175,7 +178,8 @@ public class WavePlayer extends NvComp {
 
     }
     private void reset(){
-        going = false;
+        if(currentTime == 0)
+            going = false;
         currentTime = 0;
         var p = filePaths[current];
         var newSamples = DecodeManager.decode(p);
@@ -208,8 +212,11 @@ public class WavePlayer extends NvComp {
                 new WaveRenderer(new Color(100,255,100), getH(), getW()),
                 new PondRendering(this),
                 new StarRendering(this),
-                new NebulaRenderer(),
+                new NebulaRenderer(this),
                 new LiquidMetalRenderer(),
+                new ReactorRendering(this),
+                new TeslaRendering(this),
+                new GalaxyRendering(this),
                 new GameView()
         };
 
