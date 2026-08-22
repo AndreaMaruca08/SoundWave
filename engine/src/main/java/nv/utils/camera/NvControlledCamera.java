@@ -7,6 +7,7 @@ import nv.core.camera.NvCamera;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.KeyboardListener;
 import nv.core.io.KeyboardSystem;
+import nv.core.io.Screenshot;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
