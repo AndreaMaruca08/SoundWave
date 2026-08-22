@@ -3,10 +3,11 @@ package sound.audioRendering;
 import nv.core.components.NvRgbComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.Clickable;
+import nv.core.io.Hoverable;
 
 import java.awt.*;
 
-public class PlayButton extends NvRgbComp implements Clickable {
+public class PlayButton extends NvRgbComp implements Clickable, Hoverable {
     private String display;
     private Runnable action = () -> {};
 
@@ -27,7 +28,13 @@ public class PlayButton extends NvRgbComp implements Clickable {
     @Override
     public void drawIntern(NvGraphic g) {
         g.setRGB(r,this.g, b);
-        g.drawRoundRect(0,0,getW(), getH(), 10);
+
+        if(isHovered){
+            g.setRGB(r*0.3f, this.g*0.3f, b*0.3f);
+            g.drawRoundRect(0,0,getW(), getH(), 10);
+        }else{
+            g.drawRoundRect(0,0,getW(), getH(), 10);
+        }
         g.setRGB(1,1,1);
         g.drawText(display, 0,0);
     }
