@@ -26,7 +26,7 @@ public class WavePlayer extends NvComp {
     private final HudLabel title;
     private final HudLabel durationLabel;
     private HudLabel speedLabel;
-    private final NvLabel[] titles;
+    private final TitleButton[] titles;
 
     private final String[] filePaths;
     private AudioRenderer[] renderers;
@@ -60,7 +60,7 @@ public class WavePlayer extends NvComp {
         this.mic = microphone;
         this.filePaths = new String[]{};
         this.maxDurationMs = 0;
-        this.titles = new NvLabel[0];
+        this.titles = new TitleButton[0];
         this.title = new HudLabel(30, 30);
         this.durationLabel = new HudLabel(100,0);
         this.keyboardListener = listener;
@@ -84,7 +84,7 @@ public class WavePlayer extends NvComp {
             error = true;
             this.filePaths = new String[]{};
             this.maxDurationMs = 0;
-            this.titles = new NvLabel[0];
+            this.titles = new TitleButton[0];
 
             this.title = new HudLabel(30, 30);
             this.durationLabel = new HudLabel(100,0);
@@ -95,13 +95,12 @@ public class WavePlayer extends NvComp {
         }
         NvContext.getInstance().getCurrentPage().addChild(this);
 
-        this.titles = new NvLabel[filePaths.length];
+        this.titles = new TitleButton[filePaths.length];
 
         for(int i = 0; i < titles.length; i++){
-            this.titles[i] = new NvLabel(-1000, i*70);
+            this.titles[i] = new TitleButton(-1100, i*100, 500, 80, filePaths[i], i, this);
             this.titles[i].setW(1000);
-            this.titles[i].changeText(i+1 + ". " + sanitize(filePaths[i], 40));
-            this.titles[i].setRgb(1,1,1);
+            this.titles[i].setTitle(i+1 + ". " + sanitize(filePaths[i], 40));
             addChild(this.titles[i]);
         }
 
@@ -153,6 +152,12 @@ public class WavePlayer extends NvComp {
         reset();
     }
 
+    public void setTo(int index){
+        stopAndResetSpeed();
+        current = index;
+        reset();
+    }
+
     public void previous(){
         stopAndResetSpeed();
         current--;
@@ -170,6 +175,8 @@ public class WavePlayer extends NvComp {
 
     }
     private void reset(){
+        going = false;
+        currentTime = 0;
         var p = filePaths[current];
         var newSamples = DecodeManager.decode(p);
         DISPLAY_SAMPLES = newSamples.length;
@@ -220,7 +227,7 @@ public class WavePlayer extends NvComp {
                 going = false;
                 renderers[currentRenderer].stop();
             }else{
-                AudioManager.playExternal(filePaths[current]);
+                AudioManager.playLoopExternal(filePaths[current]);
                 AudioManager.skipExternal(filePaths[current], pausedTime);
                 pause.setDisplay("GO");
                 pause.markDirty();
@@ -261,7 +268,7 @@ public class WavePlayer extends NvComp {
             if(currentVolume < 0)
                 currentVolume = 0;
             AudioManager.setVolumeExternal(filePaths[current], currentVolume);
-            volume.changeText("Volume: " + currentVolume);
+            volume.changeText("Vol: " + currentVolume);
             markDirty();
         });
         var plusVolume = new PlayButton(nextPosition(), y,size,size, Color.DARK_GRAY," +");
@@ -270,15 +277,16 @@ public class WavePlayer extends NvComp {
             if(currentVolume > 100)
                 currentVolume = 100;
             AudioManager.setVolumeExternal(filePaths[current], currentVolume);
-            volume.changeText("Volume: " + currentVolume);
+            volume.changeText("Vol: " + currentVolume);
             markDirty();
         });
 
-        var nextSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), " Next");
-        nextSound.setAction(this::next);
-        nextPosition();
         var previousSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), "Previous");
         previousSound.setAction(this::previous);
+        nextPosition();
+        var nextSound = new PlayButton(nextPosition(), y,size*2,size, Color.CYAN.darker().darker(), " Next");
+        nextSound.setAction(this::next);
+
 
         speedLabel = new HudLabel(30,100);
         speedLabel.setRgb(1,1,1);
@@ -308,18 +316,7 @@ public class WavePlayer extends NvComp {
 
         nextPosition();
 
-        var nextRenderer = new PlayButton(nextPosition(), y,size*3,size, Color.DARK_GRAY," Next graph");
-        nextRenderer.setAction(() -> {
-            renderers[currentRenderer].stop();
-            currentRenderer++;
-            if(currentRenderer > renderers.length - 1){
-                currentRenderer = 0;
-            }
-            renderers[currentRenderer].start();
-            reset();
-        });
-        nextPosition();
-        nextPosition();
+
         var previousRenderer = new PlayButton(nextPosition(), y,size*3,size, Color.DARK_GRAY," Prev graph");
         previousRenderer.setAction(() -> {
             renderers[currentRenderer].stop();
@@ -331,6 +328,20 @@ public class WavePlayer extends NvComp {
 
             reset();
         });
+        nextPosition();
+        nextPosition();
+
+        var nextRenderer = new PlayButton(nextPosition(), y,size*3,size, Color.DARK_GRAY," Next graph");
+        nextRenderer.setAction(() -> {
+            renderers[currentRenderer].stop();
+            currentRenderer++;
+            if(currentRenderer > renderers.length - 1){
+                currentRenderer = 0;
+            }
+            renderers[currentRenderer].start();
+            reset();
+        });
+
 
         addChild(previousRenderer);
         addChild(nextRenderer);

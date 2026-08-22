@@ -329,6 +329,23 @@ public final class AudioManager {
         AL10.alSourcei(sourceId, AL10.AL_LOOPING, AL10.AL_TRUE);
         AL10.alSourcePlay(sourceId);
     }
+    /**
+     * Plays an audio file continuously on a loop.
+     *
+     * @param filePath audio file
+     */
+    public static void playLoopExternal(String filePath) {
+        String path = new File(filePath).getAbsolutePath();
+
+        int sourceId = getOrCreateSource(path);
+
+        if (sourceId == -1) {
+            return;
+        }
+
+        AL10.alSourcei(sourceId, AL10.AL_LOOPING, AL10.AL_TRUE);
+        AL10.alSourcePlay(sourceId);
+    }
 
     /**
      * Stops playback for a specific audio file.
