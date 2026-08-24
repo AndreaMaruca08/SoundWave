@@ -3,7 +3,7 @@ package sound.decoding;
 import javazoom.jl.decoder.*;
 
 import java.io.FileInputStream;
-import java.util.ArrayList;
+import java.util.Arrays;
 
 import static nv.core.errors.NvLogger.logErr;
 
@@ -11,6 +11,7 @@ public class Mp3Decoder implements AudioDecoder {
 
     private static final int TARGET_RATE = 44100;
     private static final String EXTENSION = ".mp3";
+    private static final int INITIAL_CAPACITY = 1 << 20;
 
     @Override
     public String getExtension() {
@@ -27,9 +28,11 @@ public class Mp3Decoder implements AudioDecoder {
         try {
             Bitstream bitstream = new Bitstream(new FileInputStream(fileName));
             Decoder decoder = new Decoder();
-            ArrayList<Short> rawSamples = new ArrayList<>();
             Header header;
             int sampleRate = TARGET_RATE;
+
+            short[] rawSamples = new short[INITIAL_CAPACITY];
+            int count = 0;
 
             while ((header = bitstream.readFrame()) != null) {
 
@@ -38,18 +41,28 @@ public class Mp3Decoder implements AudioDecoder {
                 sampleRate = output.getSampleFrequency();
 
                 short[] buffer = output.getBuffer();
+                int bufferLength = output.getBufferLength();
 
                 if (output.getChannelCount() == 2) {
 
-                    for (int i = 0; i < output.getBufferLength(); i += 2) {
-                        rawSamples.add((short)((buffer[i] + buffer[i + 1]) / 2)
-                        );
+                    int needed = count + (bufferLength / 2);
+                    if (needed > rawSamples.length) {
+                        rawSamples = growTo(rawSamples, needed);
+                    }
+
+                    for (int i = 0; i < bufferLength; i += 2) {
+                        rawSamples[count++] = (short) ((buffer[i] + buffer[i + 1]) / 2);
                     }
 
                 } else {
-                    for (int i = 0; i < output.getBufferLength(); i++) {
-                        rawSamples.add(buffer[i]);
+
+                    int needed = count + bufferLength;
+                    if (needed > rawSamples.length) {
+                        rawSamples = growTo(rawSamples, needed);
                     }
+
+                    System.arraycopy(buffer, 0, rawSamples, count, bufferLength);
+                    count += bufferLength;
                 }
 
                 bitstream.closeFrame();
@@ -57,11 +70,7 @@ public class Mp3Decoder implements AudioDecoder {
 
             bitstream.close();
 
-            short[] samples = new short[rawSamples.size()];
-
-            for (int i = 0; i < samples.length; i++) {
-                samples[i] = rawSamples.get(i);
-            }
+            short[] samples = Arrays.copyOf(rawSamples, count);
 
             if (sampleRate != TARGET_RATE) {
                 samples = resample(samples, sampleRate);
@@ -69,21 +78,28 @@ public class Mp3Decoder implements AudioDecoder {
 
             return samples;
 
-
         } catch (Exception e) {
             logErr("Error while decoding mp3: " + e.getMessage());
             return new short[0];
         }
     }
 
+    private short[] growTo(short[] array, int minCapacity) {
+        int newCapacity = array.length * 2;
+        if (newCapacity < minCapacity) {
+            newCapacity = minCapacity;
+        }
+        return Arrays.copyOf(array, newCapacity);
+    }
+
     private short[] resample(short[] input, int fromRate) {
 
-        int outputLength = (int)((long) input.length * Mp3Decoder.TARGET_RATE / fromRate);
+        int outputLength = (int) ((long) input.length * Mp3Decoder.TARGET_RATE / fromRate);
 
         short[] output = new short[outputLength];
 
         for (int i = 0; i < outputLength; i++) {
-            int src = (int)((long)i * fromRate / Mp3Decoder.TARGET_RATE);
+            int src = (int) ((long) i * fromRate / Mp3Decoder.TARGET_RATE);
             output[i] = input[src];
         }
 

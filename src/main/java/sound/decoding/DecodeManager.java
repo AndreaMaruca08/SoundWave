@@ -3,6 +3,8 @@ package sound.decoding;
 import java.util.HashMap;
 import java.util.Map;
 
+import static nv.core.errors.NvLogger.logInfo;
+
 public class DecodeManager {
     private static final WavDecoder wav = new WavDecoder();
     private static final Mp3Decoder mp3 = new Mp3Decoder();
@@ -27,8 +29,10 @@ public class DecodeManager {
         if(decoder == null){
             return new short[0];
         }
-
+        //983807375
+        var in = System.nanoTime();
         var decoded = decoder.decode(filePath);
+        logInfo("difference: " + (System.nanoTime() - in)/1_000_000);
         decodedCache.put(filePath, decoded);
 
         return decoded;
