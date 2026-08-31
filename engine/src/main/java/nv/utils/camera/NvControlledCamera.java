@@ -7,7 +7,6 @@ import nv.core.camera.NvCamera;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.KeyboardListener;
 import nv.core.io.KeyboardSystem;
-import nv.core.io.Screenshot;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
@@ -27,7 +26,10 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
 
     private float velocity;
 
-    public float zoomTick = 0.05f;
+    /**
+     * Multiplier for zooming in and out, default is 2% increase and decrease on zoom
+     */
+    public float zoomTickMultiplier = 0.02f;
     public float minZoom = 0.5f;
     public float maxZoom = Float.POSITIVE_INFINITY;
 
@@ -118,8 +120,8 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
             dy /= length;
         }
 
-        int movX = (int) (dx * velocity * dt);
-        int movY = (int) (dy * velocity * dt);
+        float movX = dx * velocity * dt / zoom;
+        float movY = dy * velocity * dt / zoom;
 
         boolean hasMoved = movX != 0 || movY != 0;
 
@@ -130,10 +132,10 @@ public class NvControlledCamera extends NvCamera implements Updatable, KeyboardL
             setXY(x, y);
         }
         if(keys[GLFW_KEY_Z]){
-            zoomOnCenter(zoomTick, minZoom, maxZoom);
+            zoomOnCenter(zoom * zoomTickMultiplier, minZoom, maxZoom);
             NvContext.markSceneDirty();
         }else if(keys[GLFW_KEY_X]){
-            zoomOnCenter(-zoomTick, minZoom, maxZoom);
+            zoomOnCenter(-zoom * zoomTickMultiplier, minZoom, maxZoom);
             NvContext.markSceneDirty();
         }
     }

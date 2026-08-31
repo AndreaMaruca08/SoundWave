@@ -53,10 +53,10 @@ public final class CollisionManager {
         for (int idx = 0; idx < n; idx++) {
             NvComp comp = canCollide.get(idx);
 
-            int cellX = comp.getX() / COLLISION_CELL_SIZE;
-            int cellY = comp.getY() / COLLISION_CELL_SIZE;
-            int endX = (comp.getX() + comp.getW()) / COLLISION_CELL_SIZE;
-            int endY = (comp.getY() + comp.getH()) / COLLISION_CELL_SIZE;
+            int cellX = floorDivFloat(comp.getX());
+            int cellY = floorDivFloat(comp.getY());
+            int endX = floorDivFloat(comp.getX() + comp.getW());
+            int endY = floorDivFloat(comp.getY() + comp.getH());
 
             for (int x = cellX; x <= endX; x++) {
                 for (int y = cellY; y <= endY; y++) {
@@ -78,14 +78,14 @@ public final class CollisionManager {
 
             int[] indices = values[slot];
             for (int i = 0; i < cellSize; i++) {
-                NvComp a = canCollide.get(indices[i]);
+                int aIndex = indices[i];
+                NvComp a = canCollide.get(aIndex);
                 for (int j = i + 1; j < cellSize; j++) {
-                    int aIndex = indices[i];
                     int bIndex = indices[j];
                     if (!checkedPairs.add(aIndex, bIndex)) {
                         continue;
                     }
-                    NvComp b = canCollide.get(indices[j]);
+                    NvComp b = canCollide.get(bIndex);
                     if (a.getZIndex() != b.getZIndex())
                         continue;
                     if (collisionSystem.isColliding(a, b)) {
@@ -98,6 +98,10 @@ public final class CollisionManager {
                 }
             }
         }
+    }
+    private static int floorDivFloat(float value) {
+        int i = (int) (value / (float) CollisionManager.COLLISION_CELL_SIZE);
+        return (i < 0 && i * (float) CollisionManager.COLLISION_CELL_SIZE != value) ? i - 1 : i;
     }
 
     /** Reusable primitive set that prevents a pair spanning multiple cells from being processed repeatedly. */
