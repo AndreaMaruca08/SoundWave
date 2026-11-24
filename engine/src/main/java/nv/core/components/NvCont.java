@@ -124,15 +124,13 @@ public class NvCont extends NvRgbComp {
     public void tickAllComponents(float dt) {
         int n = allComponents.size();
 
-        for (int i = 0; i < n; i++) {
-            allComponents.get(i).tick(dt);
+        for (NvComp allComponent : allComponents) {
+            allComponent.tick(dt);
         }
 
         toDestroy.clear();
 
-        for (int i = 0; i < allComponents.size(); i++) {
-            NvComp comp = allComponents.get(i);
-
+        for (NvComp comp : allComponents) {
             if (comp.shouldGetDestroyed) {
                 toDestroy.add(comp);
             }

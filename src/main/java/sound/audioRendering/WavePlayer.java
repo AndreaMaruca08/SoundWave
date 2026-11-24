@@ -5,6 +5,7 @@ import nv.core.components.NvComp;
 import nv.core.graphic.NvGraphic;
 import nv.core.io.AudioManager;
 import nv.core.io.KeyboardListener;
+import nv.utils.NvTextField;
 import nv.utils.shapes.dynamic.NvLabel;
 import sound.Microphone;
 import sound.audioRendering.constellation.StarRendering;
@@ -16,9 +17,10 @@ import sound.audioRendering.pond.PondRendering;
 import sound.audioRendering.reactor.ReactorRendering;
 import sound.audioRendering.waveView.WaveRenderer;
 import sound.decoding.DecodeManager;
-import sound.tesla.TeslaRendering;
+import sound.audioRendering.tesla.TeslaRendering;
 
 import java.awt.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WavePlayer extends NvComp {
@@ -29,7 +31,11 @@ public class WavePlayer extends NvComp {
     private final HudLabel title;
     private final HudLabel durationLabel;
     private HudLabel speedLabel;
-    private final TitleButton[] titles;
+    private final List<TitleButton> titles;
+    private final List<NvLabel> categoryLabels;
+    private final List<List<TitleButton>> columnButtons;
+    private NvTextField searchField;
+    private String lastSearchQuery = "";
 
     private final String[] filePaths;
     private AudioRenderer[] renderers;
@@ -63,7 +69,9 @@ public class WavePlayer extends NvComp {
         this.mic = microphone;
         this.filePaths = new String[]{};
         this.maxDurationMs = 0;
-        this.titles = new TitleButton[0];
+        this.titles = new java.util.ArrayList<>();
+        this.categoryLabels = new java.util.ArrayList<>();
+        this.columnButtons = new java.util.ArrayList<>();
         this.title = new HudLabel(30, 30);
         this.durationLabel = new HudLabel(100,0);
         this.keyboardListener = listener;
@@ -82,12 +90,32 @@ public class WavePlayer extends NvComp {
             String[] filePaths,
             KeyboardListener keyboardListener
     ) {
+        this(x, y, w, h, List.of(new AudioCategory("audio_files", List.of(filePaths))), keyboardListener);
+    }
+
+    public WavePlayer(
+            int x,
+            int y,
+            int w,
+            int h,
+            List<AudioCategory> categories,
+            KeyboardListener keyboardListener
+    ) {
         super(x, y, w, h);
-        if(filePaths.length == 0){
+        this.categoryLabels = new java.util.ArrayList<>();
+        this.titles = new java.util.ArrayList<>();
+        this.columnButtons = new java.util.ArrayList<>();
+
+        // Raccogliamo tutti i filePaths mantenendo l'indice globale
+        List<String> allFiles = new java.util.ArrayList<>();
+        for (AudioCategory cat : categories) {
+            allFiles.addAll(cat.filePaths());
+        }
+
+        if(allFiles.isEmpty()){
             error = true;
             this.filePaths = new String[]{};
             this.maxDurationMs = 0;
-            this.titles = new TitleButton[0];
 
             this.title = new HudLabel(30, 30);
             this.durationLabel = new HudLabel(100,0);
@@ -98,13 +126,47 @@ public class WavePlayer extends NvComp {
         }
         NvContext.getInstance().getCurrentPage().addChild(this);
 
-        this.titles = new TitleButton[filePaths.length];
+        this.filePaths = allFiles.toArray(new String[0]);
 
-        for(int i = 0; i < titles.length; i++){
-            this.titles[i] = new TitleButton(-1100, i*100, 500, 80, filePaths[i], i, this);
-            this.titles[i].setW(1000);
-            this.titles[i].setTitle(i+1 + ". " + sanitize(filePaths[i], 40));
-            addChild(this.titles[i]);
+        int colWidth = 1000;
+        int colGap = 50;
+        int baseColX = -1100;
+        int buttonHeight = 80;
+        int buttonGap = 20; // 80 + 20 = 100 step verticale
+        int searchFieldHeight = 45;
+        int headerHeight = 60;
+
+        // Campo di ricerca in cima alla prima colonna (audio_files)
+        searchField = new NvTextField(baseColX, 0, colWidth, searchFieldHeight, new Color(40, 40, 45), Color.WHITE);
+        addChild(searchField);
+
+        int globalIndex = 0;
+        for (int col = 0; col < categories.size(); col++) {
+            AudioCategory cat = categories.get(col);
+            int colX = baseColX - col * (colWidth + colGap);
+            List<TitleButton> colBtnList = new java.util.ArrayList<>();
+
+            // Nome della directory: se col == 0 si trova sotto il campo di ricerca, altrimenti a y = 0
+            int headerY = (col == 0) ? (searchFieldHeight + 15) : 0;
+            NvLabel catHeader = new NvLabel(colX, headerY);
+            catHeader.setRgb(0.4f, 0.8f, 1f); // colore evidenziato per directory
+            catHeader.changeText("[" + cat.name() + "]");
+            categoryLabels.add(catHeader);
+            addChild(catHeader);
+
+            int startY = headerY + headerHeight;
+            for (int row = 0; row < cat.filePaths().size(); row++) {
+                String path = cat.filePaths().get(row);
+                int btnY = startY + row * (buttonHeight + buttonGap);
+                TitleButton tb = new TitleButton(colX, btnY, colWidth, buttonHeight, path, globalIndex, this);
+                tb.setW(colWidth);
+                tb.setTitle((globalIndex + 1) + ". " + sanitize(path, 40));
+                titles.add(tb);
+                colBtnList.add(tb);
+                addChild(tb);
+                globalIndex++;
+            }
+            columnButtons.add(colBtnList);
         }
 
         var samples = DecodeManager.decode(filePaths[0]);
@@ -114,7 +176,6 @@ public class WavePlayer extends NvComp {
 
         this.keyboardListener = keyboardListener;
         this.waveBuffer = samples;
-        this.filePaths = filePaths;
         this.maxDurationMs = AudioManager.getDurationExternal(filePaths[0]);
         this.DISPLAY_SAMPLES = samples.length;
         this.title = new HudLabel(30, 30);
@@ -370,6 +431,14 @@ public class WavePlayer extends NvComp {
         if(error)
             return;
 
+        if (searchField != null) {
+            String currentSearch = searchField.getText();
+            if (!currentSearch.equals(lastSearchQuery)) {
+                lastSearchQuery = currentSearch;
+                filterSongs(currentSearch);
+            }
+        }
+
         if(mic != null){
             mic.copyLatest(waveBuffer);
             markDirty();
@@ -382,6 +451,35 @@ public class WavePlayer extends NvComp {
                     line.updateLine(percentage);
             }
         }
+    }
+
+    private void filterSongs(String query) {
+        String cleanQuery = query == null ? "" : query.trim().toLowerCase();
+        int buttonHeight = 80;
+        int buttonGap = 20;
+        int searchFieldHeight = 45;
+        int headerHeight = 60;
+
+        for (int col = 0; col < columnButtons.size(); col++) {
+            List<TitleButton> colButtons = columnButtons.get(col);
+            int headerY = (col == 0) ? (searchFieldHeight + 15) : 0;
+            int startY = headerY + headerHeight;
+
+            int visibleRow = 0;
+            for (TitleButton tb : colButtons) {
+                String songName = sanitize(tb.getFullPath(), 200).toLowerCase();
+                boolean matches = cleanQuery.isEmpty() || songName.contains(cleanQuery);
+                if (matches) {
+                    tb.setVisible(true);
+                    int btnY = startY + visibleRow * (buttonHeight + buttonGap);
+                    tb.setY(btnY);
+                    visibleRow++;
+                } else {
+                    tb.setVisible(false);
+                }
+            }
+        }
+        markDirty();
     }
 
 

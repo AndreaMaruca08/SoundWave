@@ -1,4 +1,4 @@
-package sound.tesla;
+package sound.audioRendering.tesla;
 
 import nv.core.graphic.NvGraphic;
 import sound.audioRendering.AudioRenderer;

@@ -113,8 +113,8 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
 
             if(i == GLFW_KEY_LEFT_CONTROL || i == GLFW_KEY_RIGHT_CONTROL ||
                i == GLFW_KEY_BACKSPACE || i == GLFW_KEY_ENTER || i == GLFW_KEY_HOME ||
-               i == GLFW_KEY_LEFT_SHIFT || i == GLFW_KEY_RIGHT_SHIFT || i == GLFW_KEY_CAPS_LOCK) continue;
-
+               i == GLFW_KEY_LEFT_SHIFT || i == GLFW_KEY_RIGHT_SHIFT || i == GLFW_KEY_CAPS_LOCK ||
+               i == GLFW_KEY_TAB || i == GLFW_KEY_ESCAPE) continue;
 
             int ch = i;
             if(isAlpha(ch)){
@@ -128,9 +128,10 @@ public class NvTextField extends NvComp implements KeyboardListener, Clickable {
                 }else if(isShift()){
                     ch = toUpper(ch);
                 }
+                sb.append((char) ch);
+            } else if (ch >= 32 && ch <= 126) {
+                sb.append((char) ch);
             }
-
-            sb.append((char) ch);
         }
         text = sb.toString();
     }

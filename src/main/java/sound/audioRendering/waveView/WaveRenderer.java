@@ -32,43 +32,29 @@ public class WaveRenderer extends AudioRenderer implements LineUser {
 
     @Override
     public void reload(short[] samples) {
-
         int pixels = Math.max(1, (int) w);
-
         minPeaks = new short[pixels];
         maxPeaks = new short[pixels];
 
-        int samplesPerPixel = Math.max(
-                1,
-                samples.length / pixels
-        );
+        int totalSamples = samples.length;
+        if (totalSamples == 0) return;
+
+        int samplesPerPixel = Math.max(1, totalSamples / pixels);
 
         for (int x = 0; x < pixels; x++) {
-
             int start = x * samplesPerPixel;
-
-            if (start >= samples.length) {
-                minPeaks[x] = 0;
-                maxPeaks[x] = 0;
-                continue;
+            if (start >= totalSamples) {
+                break;
             }
 
-            int end = Math.min(
-                    start + samplesPerPixel,
-                    samples.length
-            );
-
+            int end = Math.min(start + samplesPerPixel, totalSamples);
             short min = Short.MAX_VALUE;
             short max = Short.MIN_VALUE;
 
             for (int i = start; i < end; i++) {
                 short sample = samples[i];
-
-                if (sample < min)
-                    min = sample;
-
-                if (sample > max)
-                    max = sample;
+                if (sample < min) min = sample;
+                if (sample > max) max = sample;
             }
 
             minPeaks[x] = min;

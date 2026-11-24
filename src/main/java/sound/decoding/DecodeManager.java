@@ -32,7 +32,7 @@ public class DecodeManager {
         //983807375
         var in = System.nanoTime();
         var decoded = decoder.decode(filePath);
-        logInfo("difference: " + (System.nanoTime() - in)/1_000_000);
+        logInfo("difference: " + (System.nanoTime() - in)/1_000_000+" ms");
         decodedCache.put(filePath, decoded);
 
         return decoded;

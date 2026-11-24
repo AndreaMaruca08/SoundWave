@@ -20,13 +20,13 @@ public class Circle extends NvRgbComp {
 
     @Override
     public void drawIntern(NvGraphic g) {
-        int x = radius / 2 - radius;
-        int y = radius / 2 - radius;
+        int x = (int) Math.sqrt(radius);
+        int y = (int) Math.sqrt(radius);
 
         int accuracy = radius > 200 ? 32 : 16;
 
         g.drawOval(x, y, radius, accuracy, 1, 0, 0);
-        g.drawOval(x, y, radius - 1, accuracy, 0, 0, 0);
+        g.drawOval(x, y, radius - 2, accuracy, 0, 0, 0);
     }
 
     @Override
